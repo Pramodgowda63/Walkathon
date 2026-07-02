@@ -1,0 +1,45 @@
+{% extends "admin/base.html" %}
+{% block title %}Photo Moderation â€” Admin{% endblock %}
+{% block page_title %}Photo Moderation{% endblock %}
+
+{% block admin_content %}
+<div class="anim">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800">Photo Moderation</div>
+      <div style="color:var(--muted);font-size:.85rem">Admins can review, edit or remove any uploaded photo</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="loadGallery()">Refresh Photos</button>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:1.25rem">
+    <div class="card">
+      <div class="sec-title">Moderation Rules</div>
+      <div style="font-size:.85rem;color:var(--muted);line-height:1.8">
+        Click any photo to open the moderation panel. From there you can update the caption, replace the uploaded image, or delete the photo if it does not meet the event guidelines.
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">ðŸ“¸</div>
+      <div class="stat-val" id="admin-gallery-total">0</div>
+      <div class="stat-lbl">Photos Available For Review</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title" style="justify-content:space-between">
+      <span>Uploaded Photos</span>
+      <span id="admin-gallery-count" style="font-size:.8rem;color:var(--muted)">Loading...</span>
+    </div>
+    <div class="gallery-grid" id="admin-gallery-grid">
+      <div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)">Loading photos...</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded',()=>loadGallery());
+</script>
+{% endblock %}

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Register — StepUp</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0a0c10;--surface:#111318;--card:#161a22;--border:#1e2433;--accent:#00e5a0;--accent2:#ff6b35;--accent3:#6c63ff;--danger:#ff4757;--text:#e8eaf0;--muted:#6b7280;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;
+background-image:radial-gradient(ellipse 70% 50% at 20% 30%,rgba(0,229,160,.07) 0%,transparent 50%),radial-gradient(ellipse 60% 40% at 80% 70%,rgba(108,99,255,.07) 0%,transparent 50%);}
+.wrap{width:100%;max-width:480px;}
+.logo{text-align:center;margin-bottom:1.75rem;}
+.logo h1{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;}
+.logo h1 span{color:var(--accent);}
+.logo p{color:var(--muted);font-size:.88rem;margin-top:.25rem;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2rem;}
+.card-title{font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;margin-bottom:1.5rem;}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;}
+.form-group{margin-bottom:.9rem;}
+label{display:block;font-size:.82rem;color:var(--muted);font-weight:600;margin-bottom:.35rem;}
+.hint{font-size:.71rem;color:var(--muted);margin-top:.2rem;}
+.optional{font-size:.7rem;color:var(--accent3);margin-left:.3rem;}
+.input-wrap{position:relative;}
+input,select{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.75rem 1rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.92rem;outline:none;transition:border-color .2s;width:100%;}
+input:focus,select:focus{border-color:var(--accent);}
+input[type=password]{padding-right:2.8rem;}
+input[type=number]{padding-right:.75rem;}
+select option{background:var(--surface);}
+.eye-btn{position:absolute;right:.7rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);display:flex;align-items:center;transition:color .2s;}
+.eye-btn:hover{color:var(--text);}
+.team-toggle{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:.75rem;}
+.team-tab{flex:1;padding:.45rem;border:none;background:transparent;border-radius:6px;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer;transition:all .2s;}
+.team-tab.active{background:var(--card);color:var(--text);}
+.team-section{display:none;}
+.team-section.active{display:block;}
+.team-search-results{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-top:.35rem;display:none;max-height:180px;overflow-y:auto;}
+.team-result-item{padding:.6rem 1rem;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--border);font-size:.88rem;}
+.team-result-item:last-child{border-bottom:none;}
+.team-result-item:hover{background:var(--card);}
+.team-result-item .team-count{font-size:.72rem;color:var(--muted);margin-top:.1rem;}
+.selected-team{display:none;background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.2);border-radius:8px;padding:.6rem .85rem;font-size:.85rem;margin-top:.4rem;align-items:center;justify-content:space-between;}
+.selected-team.show{display:flex;}
+.selected-team button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;}
+.btn{width:100%;padding:.82rem;border-radius:10px;border:none;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;transition:all .2s;margin-top:.25rem;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:hover{background:#00c990;}
+.btn-primary:disabled{opacity:.6;pointer-events:none;}
+.section-divider{height:1px;background:var(--border);margin:1.1rem 0;}
+.error-msg{background:rgba(255,71,87,.08);border:1px solid rgba(255,71,87,.2);border-radius:8px;padding:.6rem .85rem;font-size:.82rem;color:var(--danger);margin-bottom:.75rem;display:none;}
+.error-msg.show{display:block;}
+.footer-link{text-align:center;font-size:.82rem;color:var(--muted);margin-top:1rem;}
+.footer-link a{color:var(--accent);text-decoration:none;font-weight:700;}
+.no-team-note{font-size:.78rem;color:var(--muted);padding:.5rem;text-align:center;}
+@media(max-width:420px){.row-2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <h1>Step<span>Up</span> 🏃</h1>
+    <p>Create your account</p>
+  </div>
+  <div class="card">
+    <div class="card-title">👟 Join the Walk-a-Thon</div>
+    <div class="error-msg" id="rg-error"></div>
+
+    <!-- NAME + EMAIL -->
+    <div class="row-2">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="rg-name" placeholder="Your name" required autocomplete="name"/>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="rg-email" placeholder="you@company.com" required autocomplete="email"/>
+      </div>
+    </div>
+
+    <!-- PASSWORD -->
+    <div class="form-group">
+      <label>Password <span style="font-size:.72rem;color:var(--muted)">(min 9 chars)</span></label>
+      <div class="input-wrap">
+        <input type="password" id="rg-pass" placeholder="Create a password" required minlength="9" autocomplete="new-password"/>
+        <button type="button" class="eye-btn" onclick="toggleEye('rg-pass',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="17" height="17"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div class="hint" style="background:rgba(255,176,32,.08);border:1px solid rgba(255,176,32,.15);padding:.5rem .75rem;border-radius:6px;margin-top:.4rem;font-size:.75rem;color:#ffb020;">
+        ⚠️ Do NOT use your Mitel network password. Create a unique password for this app.
+      </div>
+    </div>
+
+    <!-- WEIGHT (OPTIONAL) -->
+    <div class="form-group">
+      <label>Weight (kg) <span class="optional">Optional — for calorie tracking</span></label>
+      <input type="number" id="rg-weight" placeholder="e.g. 70" min="30" max="200"/>
+      <div class="hint">Leave blank if you prefer not to share. Calories won't be calculated.</div>
+    </div>
+
+    <!-- COUNTRY -->
+    <div class="form-group">
+      <label>Country</label>
+      <select id="rg-country" onchange="updateCountryFlag()" required>
+        <option value="">Select your country...</option>
+        <option value="AF" data-flag="🇦🇫">Afghanistan</option>
+        <option value="AL" data-flag="🇦🇱">Albania</option>
+        <option value="DZ" data-flag="🇩🇿">Algeria</option>
+        <option value="AD" data-flag="🇦🇩">Andorra</option>
+        <option value="AO" data-flag="🇦🇴">Angola</option>
+        <option value="AG" data-flag="🇦🇬">Antigua and Barbuda</option>
+        <option value="AR" data-flag="🇦🇷">Argentina</option>
+        <option value="AM" data-flag="🇦🇲">Armenia</option>
+        <option value="AU" data-flag="🇦🇺">Australia</option>
+        <option value="AT" data-flag="🇦🇹">Austria</option>
+        <option value="AZ" data-flag="🇦🇿">Azerbaijan</option>
+        <option value="BS" data-flag="🇧🇸">Bahamas</option>
+        <option value="BH" data-flag="🇧🇭">Bahrain</option>
+        <option value="BD" data-flag="🇧🇩">Bangladesh</option>
+        <option value="BB" data-flag="🇧🇧">Barbados</option>
+        <option value="BY" data-flag="🇧🇾">Belarus</option>
+        <option value="BE" data-flag="🇧🇪">Belgium</option>
+        <option value="BZ" data-flag="🇧🇿">Belize</option>
+        <option value="BJ" data-flag="🇧🇯">Benin</option>
+        <option value="BT" data-flag="🇧🇹">Bhutan</option>
+        <option value="BO" data-flag="🇧🇴">Bolivia</option>
+        <option value="BA" data-flag="🇧🇦">Bosnia and Herzegovina</option>
+        <option value="BW" data-flag="🇧🇼">Botswana</option>
+        <option value="BR" data-flag="🇧🇷">Brazil</option>
+        <option value="BN" data-flag="🇧🇳">Brunei</option>
+        <option value="BG" data-flag="🇧🇬">Bulgaria</option>
+        <option value="BF" data-flag="🇧🇫">Burkina Faso</option>
+        <option value="BI" data-flag="🇧🇮">Burundi</option>
+        <option value="KH" data-flag="🇰🇭">Cambodia</option>
+        <option value="CM" data-flag="🇨🇲">Cameroon</option>
+        <option value="CA" data-flag="🇨🇦">Canada</option>
+        <option value="CV" data-flag="🇨🇻">Cape Verde</option>
+        <option value="CF" data-flag="🇨🇫">Central African Republic</option>
+        <option value="TD" data-flag="🇹🇩">Chad</option>
+        <option value="CL" data-flag="🇨🇱">Chile</option>
+        <option value="CN" data-flag="🇨🇳">China</option>
+        <option value="CO" data-flag="🇨🇴">Colombia</option>
+        <option value="KM" data-flag="🇰🇲">Comoros</option>
+        <option value="CG" data-flag="🇨🇬">Congo</option>
+        <option value="CR" data-flag="🇨🇷">Costa Rica</option>
+        <option value="HR" data-flag="🇭🇷">Croatia</option>
+        <option value="CU" data-flag="🇨🇺">Cuba</option>
+        <option value="CY" data-flag="🇨🇾">Cyprus</option>
+        <option value="CZ" data-flag="🇨🇿">Czech Republic</option>
+        <option value="DK" data-flag="🇩🇰">Denmark</option>
+        <option value="DJ" data-flag="🇩🇯">Djibouti</option>
+        <option value="DM" data-flag="🇩🇲">Dominica</option>
+        <option value="DO" data-flag="🇩🇴">Dominican Republic</option>
+        <option value="EC" data-flag="🇪🇨">Ecuador</option>
+        <option value="EG" data-flag="🇪🇬">Egypt</option>
+        <option value="SV" data-flag="🇸🇻">El Salvador</option>
+        <option value="GQ" data-flag="🇬🇶">Equatorial Guinea</option>
+        <option value="ER" data-flag="🇪🇷">Eritrea</option>
+        <option value="EE" data-flag="🇪🇪">Estonia</option>
+        <option value="ET" data-flag="🇪🇹">Ethiopia</option>
+        <option value="FJ" data-flag="🇫🇯">Fiji</option>
+        <option value="FI" data-flag="🇫🇮">Finland</option>
+        <option value="FR" data-flag="🇫🇷">France</option>
+        <option value="GA" data-flag="🇬🇦">Gabon</option>
+        <option value="GM" data-flag="🇬🇲">Gambia</option>
+        <option value="GE" data-flag="🇬🇪">Georgia</option>
+        <option value="DE" data-flag="🇩🇪">Germany</option>
+        <option value="GH" data-flag="🇬🇭">Ghana</option>
+        <option value="GR" data-flag="🇬🇷">Greece</option>
+        <option value="GD" data-flag="🇬🇩">Grenada</option>
+        <option value="GT" data-flag="🇬🇹">Guatemala</option>
+        <option value="GN" data-flag="🇬🇳">Guinea</option>
+        <option value="GW" data-flag="🇬🇼">Guinea-Bissau</option>
+        <option value="GY" data-flag="🇬🇾">Guyana</option>
+        <option value="HT" data-flag="🇭🇹">Haiti</option>
+        <option value="HN" data-flag="🇭🇳">Honduras</option>
+        <option value="HK" data-flag="🇭🇰">Hong Kong</option>
+        <option value="HU" data-flag="🇭🇺">Hungary</option>
+        <option value="IS" data-flag="🇮🇸">Iceland</option>
+        <option value="IN" data-flag="🇮🇳">India</option>
+        <option value="ID" data-flag="🇮🇩">Indonesia</option>
+        <option value="IR" data-flag="🇮🇷">Iran</option>
+        <option value="IQ" data-flag="🇮🇶">Iraq</option>
+        <option value="IE" data-flag="🇮🇪">Ireland</option>
+        <option value="IL" data-flag="🇮🇱">Israel</option>
+        <option value="IT" data-flag="🇮🇹">Italy</option>
+        <option value="JM" data-flag="🇯🇲">Jamaica</option>
+        <option value="JP" data-flag="🇯🇵">Japan</option>
+        <option value="JO" data-flag="🇯🇴">Jordan</option>
+        <option value="KZ" data-flag="🇰🇿">Kazakhstan</option>
+        <option value="KE" data-flag="🇰🇪">Kenya</option>
+        <option value="KI" data-flag="🇰🇮">Kiribati</option>
+        <option value="KP" data-flag="🇰🇵">North Korea</option>
+        <option value="KR" data-flag="🇰🇷">South Korea</option>
+        <option value="KW" data-flag="🇰🇼">Kuwait</option>
+        <option value="KG" data-flag="🇰🇬">Kyrgyzstan</option>
+        <option value="LA" data-flag="🇱🇦">Laos</option>
+        <option value="LV" data-flag="🇱🇻">Latvia</option>
+        <option value="LB" data-flag="🇱🇧">Lebanon</option>
+        <option value="LS" data-flag="🇱🇸">Lesotho</option>
+        <option value="LR" data-flag="🇱🇷">Liberia</option>
+        <option value="LY" data-flag="🇱🇾">Libya</option>
+        <option value="LI" data-flag="🇱🇮">Liechtenstein</option>
+        <option value="LT" data-flag="🇱🇹">Lithuania</option>
+        <option value="LU" data-flag="🇱🇺">Luxembourg</option>
+        <option value="MO" data-flag="🇲🇴">Macau</option>
+        <option value="MK" data-flag="🇲🇰">Macedonia</option>
+        <option value="MG" data-flag="🇲🇬">Madagascar</option>
+        <option value="MW" data-flag="🇲🇼">Malawi</option>
+        <option value="MY" data-flag="🇲🇾">Malaysia</option>
+        <option value="MV" data-flag="🇲🇻">Maldives</option>
+        <option value="ML" data-flag="🇲🇱">Mali</option>
+        <option value="MT" data-flag="🇲🇹">Malta</option>
+        <option value="MH" data-flag="🇲🇭">Marshall Islands</option>
+        <option value="MR" data-flag="🇲🇷">Mauritania</option>
+        <option value="MU" data-flag="🇲🇺">Mauritius</option>
+        <option value="MX" data-flag="🇲🇽">Mexico</option>
+        <option value="FM" data-flag="🇫🇲">Micronesia</option>
+        <option value="MD" data-flag="🇲🇩">Moldova</option>
+        <option value="MC" data-flag="🇲🇨">Monaco</option>
+        <option value="MN" data-flag="🇲🇳">Mongolia</option>
+        <option value="ME" data-flag="🇲🇪">Montenegro</option>
+        <option value="MA" data-flag="🇲🇦">Morocco</option>
+        <option value="MZ" data-flag="🇲🇿">Mozambique</option>
+        <option value="MM" data-flag="🇲🇲">Myanmar</option>
+        <option value="NA" data-flag="🇳🇦">Namibia</option>
+        <option value="NR" data-flag="🇳🇷">Nauru</option>
+        <option value="NP" data-flag="🇳🇵">Nepal</option>
+        <option value="NL" data-flag="🇳🇱">Netherlands</option>
+        <option value="NZ" data-flag="🇳🇿">New Zealand</option>
+        <option value="NI" data-flag="🇳🇮">Nicaragua</option>
+        <option value="NE" data-flag="🇳🇪">Niger</option>
+        <option value="NG" data-flag="🇳🇬">Nigeria</option>
+        <option value="NO" data-flag="🇳🇴">Norway</option>
+        <option value="OM" data-flag="🇴🇲">Oman</option>
+        <option value="PK" data-flag="🇵🇰">Pakistan</option>
+        <option value="PW" data-flag="🇵🇼">Palau</option>
+        <option value="PA" data-flag="🇵🇦">Panama</option>
+        <option value="PG" data-flag="🇵🇬">Papua New Guinea</option>
+        <option value="PY" data-flag="🇵🇾">Paraguay</option>
+        <option value="PE" data-flag="🇵🇪">Peru</option>
+        <option value="PH" data-flag="🇵🇭">Philippines</option>
+        <option value="PL" data-flag="🇵🇱">Poland</option>
+        <option value="PT" data-flag="🇵🇹">Portugal</option>
+        <option value="QA" data-flag="🇶🇦">Qatar</option>
+        <option value="RO" data-flag="🇷🇴">Romania</option>
+        <option value="RU" data-flag="🇷🇺">Russia</option>
+        <option value="RW" data-flag="🇷🇼">Rwanda</option>
+        <option value="KN" data-flag="🇰🇳">Saint Kitts and Nevis</option>
+        <option value="LC" data-flag="🇱🇨">Saint Lucia</option>
+        <option value="VC" data-flag="🇻🇨">Saint Vincent and Grenadines</option>
+        <option value="WS" data-flag="🇼🇸">Samoa</option>
+        <option value="SM" data-flag="🇸🇲">San Marino</option>
+        <option value="ST" data-flag="🇸🇹">São Tomé and Príncipe</option>
+        <option value="SA" data-flag="🇸🇦">Saudi Arabia</option>
+        <option value="SN" data-flag="🇸🇳">Senegal</option>
+        <option value="RS" data-flag="🇷🇸">Serbia</option>
+        <option value="SC" data-flag="🇸🇨">Seychelles</option>
+        <option value="SL" data-flag="🇸🇱">Sierra Leone</option>
+        <option value="SG" data-flag="🇸🇬">Singapore</option>
+        <option value="SK" data-flag="🇸🇰">Slovakia</option>
+        <option value="SI" data-flag="🇸🇮">Slovenia</option>
+        <option value="SB" data-flag="🇸🇧">Solomon Islands</option>
+        <option value="SO" data-flag="🇸🇴">Somalia</option>
+        <option value="ZA" data-flag="🇿🇦">South Africa</option>
+        <option value="SS" data-flag="🇸🇸">South Sudan</option>
+        <option value="ES" data-flag="🇪🇸">Spain</option>
+        <option value="LK" data-flag="🇱🇰">Sri Lanka</option>
+        <option value="SD" data-flag="🇸🇩">Sudan</option>
+        <option value="SR" data-flag="🇸🇷">Suriname</option>
+        <option value="SZ" data-flag="🇸🇿">Eswatini</option>
+        <option value="SE" data-flag="🇸🇪">Sweden</option>
+        <option value="CH" data-flag="🇨🇭">Switzerland</option>
+        <option value="SY" data-flag="🇸🇾">Syria</option>
+        <option value="TW" data-flag="🇹🇼">Taiwan</option>
+        <option value="TJ" data-flag="🇹🇯">Tajikistan</option>
+        <option value="TZ" data-flag="🇹🇿">Tanzania</option>
+        <option value="TH" data-flag="🇹🇭">Thailand</option>
+        <option value="TL" data-flag="🇹🇱">Timor-Leste</option>
+        <option value="TG" data-flag="🇹🇬">Togo</option>
+        <option value="TO" data-flag="🇹🇴">Tonga</option>
+        <option value="TT" data-flag="🇹🇹">Trinidad and Tobago</option>
+        <option value="TN" data-flag="🇹🇳">Tunisia</option>
+        <option value="TR" data-flag="🇹🇷">Turkey</option>
+        <option value="TM" data-flag="🇹🇲">Turkmenistan</option>
+        <option value="TV" data-flag="🇹🇻">Tuvalu</option>
+        <option value="UG" data-flag="🇺🇬">Uganda</option>
+        <option value="UA" data-flag="🇺🇦">Ukraine</option>
+        <option value="AE" data-flag="🇦🇪">United Arab Emirates</option>
+        <option value="GB" data-flag="🇬🇧">United Kingdom</option>
+        <option value="US" data-flag="🇺🇸">United States</option>
+        <option value="UY" data-flag="🇺🇾">Uruguay</option>
+        <option value="UZ" data-flag="🇺🇿">Uzbekistan</option>
+        <option value="VU" data-flag="🇻🇺">Vanuatu</option>
+        <option value="VA" data-flag="🇻🇦">Vatican City</option>
+        <option value="VE" data-flag="🇻🇪">Venezuela</option>
+        <option value="VN" data-flag="🇻🇳">Vietnam</option>
+        <option value="YE" data-flag="🇾🇪">Yemen</option>
+        <option value="ZM" data-flag="🇿🇲">Zambia</option>
+        <option value="ZW" data-flag="🇿🇼">Zimbabwe</option>
+      </select>
+      <input type="hidden" id="rg-country-flag"/>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- TEAM -->
+    <div style="margin-bottom:.75rem">
+      <label>Team</label>
+      <div class="team-toggle">
+        <button class="team-tab active" onclick="setTeamMode('new')">➕ Create New Team</button>
+        <button class="team-tab" onclick="setTeamMode('join')">🔗 Join Existing</button>
+        <button class="team-tab" onclick="setTeamMode('none')">⏭ Skip for Now</button>
+      </div>
+
+      <!-- NEW TEAM -->
+      <div class="team-section active" id="section-new">
+        <input type="text" id="rg-team-name" placeholder="Enter your new team name"/>
+      </div>
+
+      <!-- JOIN TEAM -->
+      <div class="team-section" id="section-join">
+        <div style="position:relative;margin-bottom:.4rem">
+          <span style="position:absolute;left:.85rem;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="15" height="15"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </span>
+          <input type="text" id="rg-invite" placeholder="Search teams by name…" oninput="searchTeams(this.value)" autocomplete="off" style="padding-left:2.4rem"/>
+        </div>
+        <div class="team-search-results" id="team-results" style="display:block;min-height:60px">
+          <div class="no-team-note" id="team-loading-hint" style="padding:.75rem;text-align:center;color:var(--muted);font-size:.82rem">Start typing to search teams…</div>
+        </div>
+        <div class="selected-team" id="selected-team">
+          <span id="selected-team-name">—</span>
+          <button onclick="clearTeamSelection()">✕</button>
+        </div>
+        <input type="hidden" id="rg-invite-code"/>
+      </div>
+
+      <!-- SKIP -->
+      <div class="team-section" id="section-none">
+        <div class="no-team-note">You can join or create a team later from your profile.</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="rg-btn" onclick="doRegister()">Create Account →</button>
+  </div>
+  <div class="footer-link">Already have an account? <a href="/login">Sign in</a></div>
+</div>
+
+<script>
+let teamMode='new', selectedTeamCode='';
+
+function setTeamMode(mode){
+  teamMode=mode;
+  document.querySelectorAll('.team-tab').forEach((b,i)=>b.classList.toggle('active',
+    (i===0&&mode==='new')||(i===1&&mode==='join')||(i===2&&mode==='none')));
+  document.querySelectorAll('.team-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('section-'+mode).classList.add('active');
+  if(mode==='join') loadAllTeams();
+}
+
+// function updateCountryFlag(){
+//   const sel=document.getElementById('rg-country');
+//   const opt=sel.options[sel.selectedIndex];
+//   const flag=opt.getAttribute('data-flag')||'';
+//   const countryName=opt.textContent.trim();
+//   document.getElementById('rg-country-flag').value=flag;
+//   document.getElementById('rg-country').setAttribute('data-country-name',countryName);
+// }
+function updateCountryFlag(){
+  const sel = document.getElementById('rg-country');
+  const opt = sel.options[sel.selectedIndex];
+
+  const countryCode = opt.value || '';
+  const countryName = opt.textContent.trim();
+
+  document.getElementById('rg-country-flag').value = countryCode;
+  document.getElementById('rg-country').setAttribute('data-country-name', countryName);
+}
+
+async function loadAllTeams(){
+  const el=document.getElementById('team-results');
+  const hint=document.getElementById('team-loading-hint');
+  if(hint) hint.textContent='Loading teams…';
+  el.style.display='block';
+  try{
+    const r=await fetch('/api/teams/search?q=');
+    const teams=await r.json();
+    renderTeams(teams, el);
+  }catch{if(hint) hint.textContent='Could not load teams.';}
+}
+
+let searchTimer;
+async function searchTeams(q){
+  selectedTeamCode='';
+  document.getElementById('selected-team').classList.remove('show');
+  document.getElementById('rg-invite-code').value='';
+  clearTimeout(searchTimer);
+  const el=document.getElementById('team-results');
+  if(!q||q.length<1){loadAllTeams();return;}
+  searchTimer=setTimeout(async()=>{
+    try{
+      const r=await fetch(`/api/teams/search?q=${encodeURIComponent(q)}`);
+      const teams=await r.json();
+      renderTeams(teams, el);
+    }catch{}
+  },300);
+}
+
+function renderTeams(teams, el){
+  if(teams.length===0){
+    el.innerHTML='<div style="padding:.75rem;text-align:center;color:var(--muted);font-size:.82rem">No teams found</div>';
+    el.style.display='block';return;
+  }
+  el.innerHTML=teams.map(t=>`<div class="team-result-item" onclick="selectTeam('${t.invite_code}','${t.name.replace(/'/g,"\\'").replace(/"/g,"&quot;")}')">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <strong>${t.name}</strong>
+      <span style="background:rgba(0,229,160,.1);color:var(--accent);font-size:.72rem;padding:.15rem .55rem;border-radius:5px;font-weight:700">${t.members} member${t.members!==1?'s':''}</span>
+    </div>
+  </div>`).join('');
+  el.style.display='block';
+}
+
+function selectTeam(code,name){
+  selectedTeamCode=code;
+  document.getElementById('rg-invite').value=name;
+  document.getElementById('rg-invite-code').value=code;
+  document.getElementById('selected-team-name').textContent='✅ '+name;
+  document.getElementById('selected-team').classList.add('show');
+  document.getElementById('team-results').style.display='none';
+}
+function clearTeamSelection(){
+  selectedTeamCode='';
+  document.getElementById('rg-invite').value='';
+  document.getElementById('rg-invite-code').value='';
+  document.getElementById('selected-team').classList.remove('show');
+}
+
+function toggleEye(id,btn){
+  const inp=document.getElementById(id);
+  const show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.innerHTML=show
+    ?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="17" height="17"><line x1="1" y1="1" x2="23" y2="23"/><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/></svg>`
+    :`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="17" height="17"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+}
+
+async function doRegister(){
+  const errEl=document.getElementById('rg-error');
+  errEl.classList.remove('show');
+  const name=document.getElementById('rg-name').value.trim();
+  const email=document.getElementById('rg-email').value.trim().toLowerCase();
+  const pass=document.getElementById('rg-pass').value;
+  const weight=document.getElementById('rg-weight').value.trim();
+  const countrySelect=document.getElementById('rg-country');
+  const country=countrySelect.getAttribute('data-country-name')||'';
+  const country_code=document.getElementById('rg-country-flag').value.trim();
+
+  if(!name||!email||!pass||!country){errEl.textContent='Name, email, password and country are required.';errEl.classList.add('show');return;}
+  if(!email.includes('@')){errEl.textContent='Please enter a valid email.';errEl.classList.add('show');return;}
+  if(pass.length<9){errEl.textContent='Password must be at least 9 characters.';errEl.classList.add('show');return;}
+
+  let team_name='', invite_code='';
+  if(teamMode==='new'){team_name=document.getElementById('rg-team-name').value.trim();}
+  if(teamMode==='join'){
+    invite_code=document.getElementById('rg-invite-code').value.trim()||document.getElementById('rg-invite').value.trim().toUpperCase();
+    if(!invite_code){errEl.textContent='Please enter or select a team to join.';errEl.classList.add('show');return;}
+  }
+
+  const btn=document.getElementById('rg-btn');
+  btn.disabled=true;btn.textContent='Creating account...';
+  try{
+    const res=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,email,password:pass,
+        weight_kg:weight?parseFloat(weight):null,
+        country,country_code,
+        team_mode:teamMode,team_name,invite_code})
+    });
+    const data=await res.json();
+    if(data.success){location.href=data.redirect;}
+    else{errEl.textContent=data.message||'Registration failed.';errEl.classList.add('show');}
+  }catch{errEl.textContent='Connection error. Please try again.';errEl.classList.add('show');}
+  btn.disabled=false;btn.textContent='Create Account →';
+}
+</script>
+</body>
+</html>

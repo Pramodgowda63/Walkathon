@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>{% block title %}StepUp — Mitel Movers{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{
+  --bg:#0a0c10;--surface:#111318;--card:#161a22;--border:#1e2433;
+  --accent:#00e5a0;--accent2:#ff6b35;--accent3:#6c63ff;
+  --gold:#ffd700;--danger:#ff4757;--warn:#ffb020;--info:#38bdf8;
+  --text:#e8eaf0;--muted:#6b7280;
+  --nav-h:60px;--sidebar-w:230px;
+  --mitel-blue:#003087;--mitel-light:#0066cc;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;overflow-x:hidden;}
+
+/* ── SIDEBAR NAV ── */
+.app-layout{display:flex;min-height:100vh;}
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;
+  background:var(--surface);border-right:1px solid var(--border);
+  position:fixed;top:0;left:0;height:100vh;
+  display:flex;flex-direction:column;
+  z-index:100;transition:transform .25s;
+}
+.sidebar-brand{
+  padding:1rem 1.1rem .85rem;
+  border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:flex-start;gap:.5rem;
+}
+/* .brand-logo{width:130px;height:auto;display:block;filter:brightness(0) invert(1) sepia(1) saturate(2) hue-rotate(170deg) brightness(1.5);} */
+.brand-logo{width:130px;height:auto;display:block;filter:none;}
+.brand-tagline{font-family:'Syne',sans-serif;font-size:.72rem;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;opacity:.85;}
+.sidebar-menu{flex:1;padding:.75rem .5rem;overflow-y:auto;}
+.nav-link{
+  display:flex;align-items:center;gap:.65rem;
+  padding:.6rem .85rem;border-radius:10px;
+  color:var(--muted);font-weight:500;font-size:.9rem;
+  cursor:pointer;transition:all .15s;text-decoration:none;
+  white-space:nowrap;border:none;background:none;width:100%;text-align:left;
+  font-family:'DM Sans',sans-serif;
+}
+.nav-link:hover{color:var(--text);background:var(--card);}
+.nav-link.active{color:var(--accent);background:rgba(0,229,160,.08);font-weight:700;}
+.nav-link svg{width:18px;height:18px;flex-shrink:0;stroke-width:2;}
+.nav-section-label{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding:.75rem .85rem .35rem;}
+.sidebar-footer{padding:.75rem .5rem;border-top:1px solid var(--border);}
+
+/* ── MAIN CONTENT ── */
+.main{margin-left:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column;}
+.page-content{padding:1.3rem 1.5rem 1.8rem;}
+.topbar{
+  height:var(--nav-h);background:rgba(10,12,16,.85);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:99;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 1.5rem;
+}
+/* .topbar-logo{height:32px;width:auto;filter:brightness(0) invert(1) sepia(1) saturate(2) hue-rotate(170deg) brightness(1.5);} */
+.topbar-logo{height:32px;width:auto;filter:none;}
+.topbar-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;margin-left:.5rem;}
+.topbar-right{display:flex;align-items:center;gap:.75rem;}
+.avatar{width:34px;height:34px;border-radius:50%;background:rgba(0,229,160,.15);border:2px solid rgba(0,229,160,.3);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;color:var(--accent);cursor:pointer;position:relative;}
+
+/* ── AVATAR DROPDOWN ── */
+.avatar-dropdown{position:absolute;top:42px;right:0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.5rem;min-width:160px;z-index:999;display:none;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+.avatar-dropdown.open{display:block;}
+.avatar-dd-item{display:flex;align-items:center;gap:.5rem;padding:.55rem .75rem;border-radius:8px;color:var(--text);font-size:.85rem;cursor:pointer;transition:background .15s;white-space:nowrap;}
+.avatar-dd-item:hover{background:var(--surface);}
+.avatar-dd-item.danger{color:var(--danger);}
+
+/* Photo gallery button in topbar */
+.gallery-btn{display:flex;align-items:center;gap:.4rem;padding:.4rem .9rem;border-radius:9px;background:rgba(108,99,255,.12);border:1px solid rgba(108,99,255,.25);color:var(--accent3);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.gallery-btn:hover{background:rgba(108,99,255,.22);transform:translateY(-1px);}
+.gallery-btn svg{width:15px;height:15px;}
+
+/* ── HAMBURGER (mobile) ── */
+.hamburger{display:none;background:none;border:none;cursor:pointer;color:var(--text);padding:4px;}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99;}
+
+/* ── COMMON UI ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.25rem;}
+.card+.card{margin-top:1.25rem;}
+.sec-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.4rem;}
+.badge-tag{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border-radius:5px;font-size:.75rem;font-weight:700;}
+.badge-green{background:rgba(0,229,160,.12);color:var(--accent);}
+.badge-orange{background:rgba(255,107,53,.12);color:var(--accent2);}
+.badge-purple{background:rgba(108,99,255,.12);color:var(--accent3);}
+.badge-red{background:rgba(255,71,87,.12);color:var(--danger);}
+.badge-gray{background:rgba(255,255,255,.06);color:var(--muted);}
+.badge-gold{background:rgba(255,215,0,.12);color:var(--gold);}
+
+/* ── GRID ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;}
+.grid-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem;}
+
+/* ── STAT CARD ── */
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.1rem;transition:transform .2s;}
+.stat-card:hover{transform:translateY(-2px);}
+.stat-icon{font-size:1.3rem;margin-bottom:.6rem;}
+.stat-val{font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:800;line-height:1;color:var(--accent);}
+.stat-lbl{font-size:.75rem;color:var(--muted);margin-top:.25rem;}
+.stat-card.c-purple .stat-val{color:var(--accent3);}
+.stat-card.c-orange .stat-val{color:var(--accent2);}
+.stat-card.c-gold .stat-val{color:var(--gold);}
+.stat-card.c-red .stat-val{color:var(--danger);}
+.stat-card.c-info .stat-val{color:var(--info);}
+
+/* ── FORMS ── */
+.form-group{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.85rem;}
+.form-label{font-size:.82rem;color:var(--muted);font-weight:600;}
+.form-hint{font-size:.72rem;color:var(--muted);}
+.input-wrap{position:relative;}
+.input-wrap input,.input-wrap select,.input-wrap textarea{width:100%;}
+.eye-btn{position:absolute;right:.7rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);display:flex;align-items:center;padding:3px;transition:color .2s;}
+.eye-btn:hover{color:var(--text);}
+input,select,textarea{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:.75rem 1rem;
+  color:var(--text);font-family:'DM Sans',sans-serif;font-size:.93rem;
+  outline:none;transition:border-color .2s;width:100%;
+}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.6);}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+input[type=password]{padding-right:2.8rem;}
+select option{background:var(--surface);}
+textarea{resize:vertical;min-height:70px;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
+  padding:.65rem 1.3rem;border-radius:9px;border:none;
+  font-family:'DM Sans',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;transition:all .2s;}
+.btn-sm{padding:.4rem .75rem;font-size:.8rem;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:hover{background:#00c990;transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,229,160,.3);}
+.btn-primary:disabled{opacity:.6;pointer-events:none;}
+.btn-ghost{background:var(--surface);border:1px solid var(--border);color:var(--text);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-danger:hover{background:#e0333e;}
+.btn-warning{background:var(--warn);color:#000;}
+.btn-warning:hover{background:#e0a01c;}
+.btn-info{background:var(--info);color:#000;}
+.btn-purple{background:var(--accent3);color:#fff;}
+.btn-purple:hover{background:#5a52d5;}
+.btn-full{width:100%;}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;font-size:.86rem;}
+thead th{text-align:left;padding:.55rem .85rem;color:var(--muted);font-size:.73rem;font-weight:700;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+tbody td{padding:.7rem .85rem;border-bottom:1px solid rgba(255,255,255,.03);white-space:nowrap;}
+tbody tr:hover td{background:rgba(255,255,255,.02);}
+tbody tr:last-child td{border-bottom:none;}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:999;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .2s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.75rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;transform:translateY(20px);transition:transform .2s;}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-title{font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.8rem 1.25rem;font-size:.88rem;box-shadow:0 12px 40px rgba(0,0,0,.5);transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;max-width:360px;}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.success{border-color:var(--accent);color:var(--accent);}
+#toast.error{border-color:var(--danger);color:var(--danger);}
+#toast.info{border-color:var(--info);color:var(--info);}
+
+/* ── PROGRESS ── */
+.prog-track{background:var(--surface);border-radius:999px;height:8px;overflow:hidden;}
+.prog-bar{height:100%;border-radius:999px;transition:width 1s ease;}
+
+/* ── MOTIVATION ── */
+.motiv-card{display:flex;gap:.85rem;align-items:center;padding:1rem;border-radius:12px;border:1px solid var(--border);}
+.motiv-card.low{background:rgba(255,71,87,.06);border-color:rgba(255,71,87,.2);}
+.motiv-card.medium{background:rgba(255,176,32,.06);border-color:rgba(255,176,32,.2);}
+.motiv-card.high{background:rgba(0,229,160,.06);border-color:rgba(0,229,160,.2);}
+.motiv-card.champion{background:rgba(255,215,0,.06);border-color:rgba(255,215,0,.3);}
+
+/* ── MILESTONE ── */
+#milestone{position:fixed;top:72px;left:50%;transform:translateX(-50%);background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);border-radius:12px;padding:.75rem 1.5rem;font-size:.95rem;font-weight:700;color:var(--gold);z-index:300;text-align:center;opacity:0;transition:all .4s;pointer-events:none;max-width:90vw;}
+#milestone.show{opacity:1;}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.anim{animation:fadeUp .35s ease;}
+
+/* ── GALLERY MODAL ── */
+#gallery-modal .modal{max-width:900px;}
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.85rem;max-height:60vh;overflow-y:auto;margin-top:.75rem;}
+.gallery-card-btn{appearance:none;background:none;border:none;padding:0;text-align:left;cursor:pointer;}
+.gallery-item{border-radius:14px;overflow:hidden;border:1px solid var(--border);position:relative;background:var(--surface);transition:transform .18s,border-color .18s,box-shadow .18s;height:100%;}
+.gallery-card-btn:hover .gallery-item{transform:translateY(-2px);border-color:rgba(108,99,255,.35);box-shadow:0 10px 24px rgba(0,0,0,.22);}
+.gallery-item img{width:100%;height:124px;object-fit:cover;display:block;}
+.gallery-item-footer{padding:.6rem .75rem;}
+.gallery-item-user{font-size:.78rem;font-weight:700;color:var(--accent);display:flex;align-items:center;justify-content:space-between;gap:.5rem;}
+.gallery-item-thought{font-size:.78rem;color:var(--text);margin-top:.2rem;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.gallery-item-time{font-size:.68rem;color:var(--muted);margin-top:.25rem;}
+.gallery-manage-pill{display:inline-flex;align-items:center;gap:.25rem;padding:.18rem .45rem;border-radius:999px;background:rgba(108,99,255,.14);color:var(--accent3);font-size:.66rem;font-weight:700;white-space:nowrap;}
+.gallery-upload-area{border:2px dashed var(--border);border-radius:14px;padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:1rem;}
+.gallery-upload-area:hover,.gallery-upload-area.drag{border-color:var(--accent3);background:rgba(108,99,255,.05);}
+.gallery-preview-wrap{position:relative;display:inline-block;margin-bottom:.75rem;}
+.gallery-preview-wrap img{max-height:200px;border-radius:10px;display:block;}
+.gallery-preview-remove{position:absolute;top:-8px;right:-8px;background:var(--danger);border:none;border-radius:50%;width:22px;height:22px;color:#fff;font-size:.75rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.upload-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem;}
+.gallery-file-meta{font-size:.76rem;color:var(--muted);align-self:center;}
+#gallery-detail-modal .modal{max-width:720px;}
+.gallery-detail-media{border-radius:16px;overflow:hidden;background:var(--surface);border:1px solid var(--border);margin-bottom:1rem;}
+.gallery-detail-media img{width:100%;max-height:360px;object-fit:contain;display:block;background:#0c1017;}
+.gallery-detail-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1rem;}
+.gallery-detail-stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.75rem;}
+.gallery-detail-stat span{display:block;font-size:.72rem;color:var(--muted);margin-bottom:.25rem;}
+.gallery-detail-stat strong{display:block;font-size:.88rem;color:var(--text);line-height:1.45;word-break:break-word;}
+.gallery-detail-caption{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:.85rem 1rem;font-size:.86rem;line-height:1.6;color:var(--text);margin-bottom:.9rem;white-space:pre-wrap;}
+.gallery-detail-caption.is-empty{color:var(--muted);font-style:italic;}
+.gallery-detail-hint{font-size:.8rem;color:var(--muted);margin-bottom:.9rem;}
+.gallery-detail-actions{display:flex;gap:.65rem;flex-wrap:wrap;}
+.gallery-edit-panel{display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);}
+.gallery-edit-panel.open{display:block;}
+.gallery-edit-preview{border-radius:14px;overflow:hidden;border:1px solid var(--border);background:var(--surface);margin:.75rem 0;}
+.gallery-edit-preview img{width:100%;max-height:260px;object-fit:contain;display:block;background:#0c1017;}
+
+/* ── MOBILE ── */
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .sidebar-overlay.open{display:block;}
+  .main{margin-left:0;}
+  .hamburger{display:flex;}
+  .grid-4{grid-template-columns:1fr 1fr;}
+  .grid-3{grid-template-columns:1fr 1fr;}
+  .grid-2{grid-template-columns:1fr;}
+  .page-content{padding:.85rem .85rem 5.5rem;}
+  .card{padding:1rem;}
+  .stat-val{font-size:1.45rem;}
+  .btn{min-height:44px;}
+  input,select,textarea{min-height:44px;font-size:16px!important;}
+  .topbar{height:54px;}
+  .topbar-logo{height:26px;}
+  .gallery-btn span{display:none;}
+  .gallery-grid{grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:.7rem;}
+  .gallery-item img{height:110px;}
+  .gallery-detail-meta{grid-template-columns:1fr;}
+}
+@media(max-width:480px){
+  .grid-4{grid-template-columns:1fr 1fr;}
+  .grid-3{grid-template-columns:1fr;}
+  .topbar{padding:0 .85rem;}
+  .stat-card{padding:.85rem;}
+  .modal{border-radius:16px 16px 0 0;margin-top:auto;max-height:80vh;}
+  .modal-overlay{align-items:flex-end;padding:0;}
+  #gallery-modal .modal{max-width:100%;border-radius:16px 16px 0 0;}
+  #gallery-detail-modal .modal{max-width:100%;border-radius:16px 16px 0 0;}
+  .gallery-detail-actions .btn{width:100%;}
+}
+
+/* ── BOTTOM NAV (mobile only) ── */
+.bottom-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--surface);border-top:1px solid var(--border);
+  z-index:200;padding:.45rem 0;
+  padding-bottom:env(safe-area-inset-bottom,.45rem);
+}
+.bottom-nav-inner{display:flex;justify-content:space-around;align-items:center;}
+.bn-item{display:flex;flex-direction:column;align-items:center;gap:.18rem;
+  color:var(--muted);font-size:.62rem;font-weight:600;text-decoration:none;
+  padding:.3rem .5rem;border-radius:8px;transition:color .15s;min-width:52px;
+  -webkit-tap-highlight-color:transparent;}
+.bn-item svg{width:20px;height:20px;stroke-width:2;}
+.bn-item.active,.bn-item:hover{color:var(--accent);}
+.bn-item span{white-space:nowrap;}
+@media(max-width:768px){
+  .bottom-nav{display:block;}
+}
+</style>
+{% block head %}{% endblock %}
+</head>
+<body>
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <img src="/static/images/logo.png" alt="Mitel Movers" class="brand-logo"/>
+      <div class="brand-tagline">Walk-a-Thon 2026</div>
+    </div>
+    <nav class="sidebar-menu">
+      {% block sidebar_menu %}{% endblock %}
+    </nav>
+    <div class="sidebar-footer">
+      <button class="nav-link" style="color:var(--danger)" onclick="doLogout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Logout
+      </button>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:.75rem;">
+        <button class="hamburger" onclick="toggleSidebar()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <img src="/static/images/logo.png" alt="Mitel Movers" class="topbar-logo"/>
+        <span class="topbar-title" style="display:none" id="topbar-page-title">{% block page_title %}Dashboard{% endblock %}</span>
+      </div>
+      <div class="topbar-right">
+        {% if session.get('role') == 'admin' %}
+        <a href="/admin/photos" class="gallery-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>Photos</span>
+        </a>
+        {% else %}
+        <button class="gallery-btn" onclick="openGalleryModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>📸 Photo Wall</span>
+        </button>
+        {% endif %}
+        {% if session.get('role') == 'admin' %}
+          <span class="badge-tag badge-orange">Admin</span>
+        {% endif %}
+        <div class="avatar" id="topbar-avatar" onclick="toggleAvatarDD()">
+          {{ (session.get('user_name') or 'U')[0].upper() }}
+          <div class="avatar-dropdown" id="avatar-dropdown">
+            <div class="avatar-dd-item" style="color:var(--muted);font-size:.78rem;pointer-events:none;border-bottom:1px solid var(--border);margin-bottom:.3rem;padding-bottom:.5rem;">{{ session.get('user_name','User') }}</div>
+            <div class="avatar-dd-item danger" onclick="doLogout()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Logout
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div class="page-content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="milestone"></div>
+
+<!-- PHOTO GALLERY MODAL -->
+<div class="modal-overlay" id="gallery-modal">
+  <div class="modal" style="max-width:860px">
+    <div class="modal-title">
+      📸 Mitel Movers Photo Wall
+      <button class="modal-close" onclick="closeGalleryModal()">✕</button>
+    </div>
+
+    {% if session.get('role') != 'admin' %}
+    <!-- Upload Section -->
+    <div style="background:var(--surface);border-radius:12px;padding:1rem;margin-bottom:1.25rem;border:1px solid var(--border);">
+      <div style="font-weight:700;font-size:.9rem;margin-bottom:.75rem;color:var(--accent3)">📤 Share Your Moment</div>
+      <div id="gallery-preview-container" style="display:none;text-align:center;margin-bottom:.75rem;">
+        <div class="gallery-preview-wrap">
+          <img id="gallery-preview-img" src="" alt="preview"/>
+          <button class="gallery-preview-remove" onclick="clearGalleryPreview()">✕</button>
+        </div>
+      </div>
+      <div class="gallery-upload-area" id="gallery-drop-area" onclick="document.getElementById('gallery-file-input').click()">
+        <div style="font-size:2rem;margin-bottom:.35rem">📷</div>
+        <div style="font-size:.88rem;color:var(--muted)">Tap to choose from <strong style="color:var(--text)">Camera</strong> or <strong style="color:var(--text)">Gallery</strong></div>
+        <div style="font-size:.73rem;color:var(--muted);margin-top:.25rem">Drag & drop also works</div>
+      </div>
+      <input type="file" id="gallery-file-input" accept="image/*" capture="environment" style="display:none" onchange="handleGalleryFile(event)"/>
+      <!-- Mobile: two buttons side by side -->
+      <div class="upload-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openCamera()">📷 Camera</button>
+        <button class="btn btn-ghost btn-sm" onclick="openGalleryPicker()">🖼️ Gallery</button>
+      </div>
+      <input type="file" id="gallery-camera-input" accept="image/*" capture="environment" style="display:none" onchange="handleGalleryFile(event)"/>
+      <input type="file" id="gallery-picker-input" accept="image/*" style="display:none" onchange="handleGalleryFile(event)"/>
+      <textarea id="gallery-thought" placeholder="Share your thoughts... (optional)" style="margin-top:.75rem;min-height:60px;font-size:.88rem;" maxlength="300"></textarea>
+      <button class="btn btn-purple btn-full" style="margin-top:.6rem" onclick="submitGalleryPost()">🚀 Share to Photo Wall</button>
+    </div>
+
+    {% endif %}
+    <!-- Gallery Grid -->
+    <div style="font-weight:700;font-size:.9rem;color:var(--muted);margin-bottom:.5rem" id="gallery-count-label">Community Photos</div>
+    <div class="gallery-grid" id="gallery-grid">
+      <div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)">Loading photos...</div>
+    </div>
+</div>
+</div>
+
+<div class="modal-overlay" id="gallery-detail-modal">
+  <div class="modal">
+    <div class="modal-title">
+      Photo Details
+      <button class="modal-close" onclick="closeGalleryPhoto()">&times;</button>
+    </div>
+    <div class="gallery-detail-media">
+      <img id="gallery-detail-image" src="" alt="Selected photo"/>
+    </div>
+    <div class="gallery-detail-meta">
+      <div class="gallery-detail-stat">
+        <span>Uploaded By</span>
+        <strong id="gallery-detail-user">-</strong>
+      </div>
+      <div class="gallery-detail-stat">
+        <span>Created</span>
+        <strong id="gallery-detail-created">-</strong>
+      </div>
+      <div class="gallery-detail-stat">
+        <span>Updated</span>
+        <strong id="gallery-detail-updated">-</strong>
+      </div>
+    </div>
+    <div class="gallery-detail-caption" id="gallery-detail-thought">No caption added.</div>
+    <div class="gallery-detail-hint" id="gallery-detail-hint"></div>
+    <div class="gallery-detail-actions" id="gallery-detail-actions" style="display:none">
+      <button class="btn btn-ghost" onclick="startGalleryEdit()">Edit Photo</button>
+      <button class="btn btn-danger" onclick="deleteSelectedGalleryPhoto()">Delete Photo</button>
+    </div>
+
+    <div class="gallery-edit-panel" id="gallery-edit-panel">
+      <div class="form-group">
+        <label class="form-label">Caption</label>
+        <textarea id="gallery-edit-thought" maxlength="300" placeholder="Update your caption or leave it empty."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Replace Image</label>
+        <div class="upload-actions">
+          <button class="btn btn-ghost btn-sm" type="button" onclick="document.getElementById('gallery-edit-file-input').click()">Choose New Photo</button>
+          <button class="btn btn-ghost btn-sm" type="button" onclick="clearGalleryEditFile()">Keep Current</button>
+          <span class="gallery-file-meta" id="gallery-edit-file-name">Keeping current photo</span>
+        </div>
+        <input type="file" id="gallery-edit-file-input" accept="image/*" style="display:none" onchange="handleGalleryEditFile(event)"/>
+      </div>
+      <div class="gallery-edit-preview">
+        <img id="gallery-edit-preview-img" src="" alt="Photo preview"/>
+      </div>
+      <div class="gallery-detail-actions">
+        <button class="btn btn-ghost" type="button" onclick="cancelGalleryEdit()">Cancel</button>
+        <button class="btn btn-primary" type="button" id="gallery-save-btn" onclick="saveGalleryEdit()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV (mobile) -->
+{% if session.get('role') != 'admin' %}
+<nav class="bottom-nav" id="bottom-nav">
+  <div class="bottom-nav-inner">
+    <a href="/dashboard" class="bn-item {% if request.path=='/dashboard' %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="/team" class="bn-item {% if request.path=='/team' %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Team</span>
+    </a>
+    <a href="/stepcounter" class="bn-item {% if request.path=='/stepcounter' %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="3" stroke-linecap="round"/></svg>
+      <span>Counter</span>
+    </a>
+    <a href="/fitbit" class="bn-item {% if request.path=='/fitbit' %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <span>Fitbit</span>
+    </a>
+    <a class="bn-item" onclick="openGalleryModal()" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <span>Photos</span>
+    </a>
+  </div>
+</nav>
+{% endif %}
+{% if session.get('role') == 'admin' %}
+<nav class="bottom-nav" id="bottom-nav">
+  <div class="bottom-nav-inner">
+    <a href="/admin" class="bn-item {% if request.path=='/admin' %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span>Overview</span>
+    </a>
+    <a href="/admin/users" class="bn-item {% if request.path=='/admin/users' %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      <span>Users</span>
+    </a>
+    <a href="/admin/leaderboard" class="bn-item {% if request.path=='/admin/leaderboard' %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="18 20 18 10"/><polyline points="12 20 12 4"/><polyline points="6 20 6 14"/></svg>
+      <span>Rankings</span>
+    </a>
+    <a href="/admin/steps" class="bn-item {% if request.path=='/admin/steps' %}active{% endif %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6" stroke-linecap="round" stroke-width="3"/></svg>
+      <span>Steps</span>
+    </a>
+    <a class="bn-item danger" onclick="doLogout()" href="#" style="color:var(--danger)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span>Logout</span>
+    </a>
+  </div>
+</nav>
+{% endif %}
+
+<script>
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+function toggleAvatarDD(){
+  document.getElementById('avatar-dropdown').classList.toggle('open');
+}
+document.addEventListener('click',function(e){
+  const dd=document.getElementById('avatar-dropdown');
+  if(dd&&!e.target.closest('.avatar'))dd.classList.remove('open');
+});
+let _toastTimer;
+function showToast(msg,type='info'){
+  const el=document.getElementById('toast');
+  clearTimeout(_toastTimer);
+  el.textContent=msg;el.className='show '+(type||'');
+  _toastTimer=setTimeout(()=>el.className='',3500);
+}
+function showMilestone(msg){
+  const el=document.getElementById('milestone');
+  el.textContent='🎉 '+msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),5000);
+}
+function toggleEye(id,btn){
+  const inp=document.getElementById(id);
+  const show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.innerHTML=show
+    ?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="17" height="17"><line x1="1" y1="1" x2="23" y2="23"/><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/></svg>`
+    :`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="17" height="17"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+}
+async function doLogout(){
+  await fetch('/api/logout',{method:'POST'});
+  location.href='/login';
+}
+function fnum(n){return(n||0).toLocaleString();}
+
+// ── GALLERY ──
+let _galleryFile=null;
+function openGalleryModal(){
+  document.getElementById('gallery-modal').classList.add('open');
+  loadGallery();
+}
+function closeGalleryModal(){
+  document.getElementById('gallery-modal').classList.remove('open');
+}
+function openCamera(){
+  document.getElementById('gallery-camera-input').click();
+}
+function openGalleryPicker(){
+  document.getElementById('gallery-picker-input').click();
+}
+function handleGalleryFile(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  if(!file.type.startsWith('image/')){showToast('Please select an image file','error');return;}
+  if(file.size>8*1024*1024){showToast('Image too large. Please choose a smaller image.','error');return;}
+  _galleryFile=file;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    document.getElementById('gallery-preview-img').src=ev.target.result;
+    document.getElementById('gallery-preview-container').style.display='block';
+    document.getElementById('gallery-drop-area').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+function clearGalleryPreview(){
+  _galleryFile=null;
+  document.getElementById('gallery-preview-img').src='';
+  document.getElementById('gallery-preview-container').style.display='none';
+  document.getElementById('gallery-drop-area').style.display='block';
+  document.getElementById('gallery-file-input').value='';
+  document.getElementById('gallery-camera-input').value='';
+  document.getElementById('gallery-picker-input').value='';
+}
+async function submitGalleryPost(){
+  if(!_galleryFile){showToast('Please select a photo first','error');return;}
+  const thought=document.getElementById('gallery-thought').value.trim();
+  const btn=event.target;
+  btn.disabled=true;btn.textContent='Uploading...';
+  const reader=new FileReader();
+  reader.onload=async function(ev){
+    const dataUrl=ev.target.result;
+    const [meta,b64]=dataUrl.split(',');
+    const imageType=meta.match(/:(.*?);/)[1];
+    try{
+      const r=await fetch('/api/gallery',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({image_data:b64,image_type:imageType,thought})});
+      const d=await r.json();
+      if(d.success){
+        showToast('Photo shared! 📸','success');
+        clearGalleryPreview();
+        document.getElementById('gallery-thought').value='';
+        loadGallery();
+      }else showToast(d.message||'Upload failed','error');
+    }catch{showToast('Upload failed','error');}
+    btn.disabled=false;btn.textContent='🚀 Share to Photo Wall';
+  };
+  reader.readAsDataURL(_galleryFile);
+}
+async function loadGallery(){
+  try{
+    const r=await fetch('/api/gallery');
+    const photos=await r.json();
+    const grid=document.getElementById('gallery-grid');
+    const lbl=document.getElementById('gallery-count-label');
+    if(lbl)lbl.textContent=`Community Photos (${photos.length})`;
+    if(!photos.length){
+      grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)">No photos yet — be the first to share! 📸</div>';
+      return;
+    }
+    const myId={{ session.get('user_id', 0) }};
+    const isAdmin={{ 'true' if session.get('role')=='admin' else 'false' }};
+    grid.innerHTML=photos.map(p=>{
+      const canDel=(p.user_id===myId||isAdmin);
+      const timeStr=p.created_at?p.created_at.slice(0,16):'';
+      return`<div class="gallery-item">
+        <img src="data:${p.image_type};base64,${p.image_data}" alt="photo" loading="lazy"/>
+        ${canDel?`<button class="gallery-del-btn" onclick="deleteGalleryItem(${p.id})">🗑️</button>`:''}
+        <div class="gallery-item-footer">
+          <div class="gallery-item-user">@${escH(p.user_name)}</div>
+          ${p.thought?`<div class="gallery-item-thought">${escH(p.thought)}</div>`:''}
+          <div class="gallery-item-time">${timeStr}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){console.error(e);}
+}
+async function deleteGalleryItem(id){
+  if(!confirm('Delete this photo?'))return;
+  const r=await fetch(`/api/gallery/${id}`,{method:'DELETE'});
+  const d=await r.json();
+  if(d.success){showToast('Photo deleted','info');loadGallery();}
+  else showToast(d.message||'Failed','error');
+}
+function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// Drag & drop
+const dropArea=document.getElementById('gallery-drop-area');
+if(dropArea){
+  dropArea.addEventListener('dragover',e=>{e.preventDefault();dropArea.classList.add('drag');});
+  dropArea.addEventListener('dragleave',()=>dropArea.classList.remove('drag'));
+  dropArea.addEventListener('drop',e=>{
+    e.preventDefault();dropArea.classList.remove('drag');
+    const file=e.dataTransfer.files[0];
+    if(file&&file.type.startsWith('image/')){
+      const fakeEvt={target:{files:[file]}};
+      handleGalleryFile(fakeEvt);
+    }
+  });
+}
+
+const GALLERY_CTX={
+  myId:{{ session.get('user_id', 0) }},
+  isAdmin:{{ 'true' if session.get('role')=='admin' else 'false' }},
+  canUpload:{{ 'true' if session.get('role')!='admin' else 'false' }}
+};
+const GALLERY_STATE={uploadFile:null,editFile:null,photos:[],selectedId:null};
+
+function openGalleryModal(){
+  const modal=document.getElementById('gallery-modal');
+  if(!modal)return;
+  modal.classList.add('open');
+  loadGallery();
+}
+function closeGalleryModal(){
+  const modal=document.getElementById('gallery-modal');
+  if(modal)modal.classList.remove('open');
+  closeGalleryPhoto();
+}
+function closeGalleryPhoto(){
+  GALLERY_STATE.selectedId=null;
+  hideGalleryEditPanel();
+  const modal=document.getElementById('gallery-detail-modal');
+  if(modal)modal.classList.remove('open');
+}
+function openCamera(){
+  const input=document.getElementById('gallery-camera-input');
+  if(input)input.click();
+}
+function openGalleryPicker(){
+  const input=document.getElementById('gallery-picker-input');
+  if(input)input.click();
+}
+function validateGalleryFile(file){
+  if(!file)return false;
+  if(!file.type.startsWith('image/')){showToast('Please select an image file','error');return false;}
+  if(file.size>8*1024*1024){showToast('Image too large. Please choose a smaller image.','error');return false;}
+  return true;
+}
+function readFileAsDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>resolve(e.target.result);
+    reader.onerror=()=>reject(new Error('Could not read file'));
+    reader.readAsDataURL(file);
+  });
+}
+async function handleGalleryFile(e){
+  const file=e.target.files[0];
+  if(!validateGalleryFile(file))return;
+  GALLERY_STATE.uploadFile=file;
+  try{
+    const dataUrl=await readFileAsDataUrl(file);
+    const img=document.getElementById('gallery-preview-img');
+    const wrap=document.getElementById('gallery-preview-container');
+    const drop=document.getElementById('gallery-drop-area');
+    if(img)img.src=dataUrl;
+    if(wrap)wrap.style.display='block';
+    if(drop)drop.style.display='none';
+  }catch{
+    showToast('Could not preview image','error');
+  }
+}
+function clearGalleryPreview(){
+  GALLERY_STATE.uploadFile=null;
+  const img=document.getElementById('gallery-preview-img');
+  const wrap=document.getElementById('gallery-preview-container');
+  const drop=document.getElementById('gallery-drop-area');
+  const fileInput=document.getElementById('gallery-file-input');
+  const cameraInput=document.getElementById('gallery-camera-input');
+  const pickerInput=document.getElementById('gallery-picker-input');
+  if(img)img.src='';
+  if(wrap)wrap.style.display='none';
+  if(drop)drop.style.display='block';
+  if(fileInput)fileInput.value='';
+  if(cameraInput)cameraInput.value='';
+  if(pickerInput)pickerInput.value='';
+}
+async function submitGalleryPost(){
+  if(!GALLERY_STATE.uploadFile){showToast('Please select a photo first','error');return;}
+  const thoughtEl=document.getElementById('gallery-thought');
+  const thought=thoughtEl?thoughtEl.value.trim():'';
+  const btn=document.querySelector('#gallery-modal .btn.btn-purple');
+  const originalText=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Uploading...';}
+  try{
+    const dataUrl=await readFileAsDataUrl(GALLERY_STATE.uploadFile);
+    const [meta,b64]=dataUrl.split(',');
+    const imageType=(meta.match(/:(.*?);/)||[])[1]||'image/jpeg';
+    const r=await fetch('/api/gallery',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({image_data:b64,image_type:imageType,thought})});
+    const d=await r.json();
+    if(d.success){
+      showToast('Photo shared!','success');
+      clearGalleryPreview();
+      if(thoughtEl)thoughtEl.value='';
+      await loadGallery();
+    }else showToast(d.message||'Upload failed','error');
+  }catch{
+    showToast('Upload failed','error');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=originalText||'Share to Photo Wall';}
+  }
+}
+async function loadGallery(){
+  try{
+    const r=await fetch('/api/gallery');
+    const photos=await r.json();
+    GALLERY_STATE.photos=Array.isArray(photos)?photos:[];
+    renderGalleryViews();
+    if(GALLERY_STATE.selectedId){
+      const selected=findGalleryPhoto(GALLERY_STATE.selectedId);
+      if(selected)openGalleryPhoto(selected.id,false);
+      else closeGalleryPhoto();
+    }
+  }catch(e){
+    console.error(e);
+    renderGalleryError();
+  }
+}
+function renderGalleryViews(){
+  renderGalleryGrid('gallery-grid','gallery-count-label','No photos yet - be the first to share!');
+  renderGalleryGrid('admin-gallery-grid','admin-gallery-count','No photos available for moderation yet.');
+  const totalEl=document.getElementById('admin-gallery-total');
+  if(totalEl)totalEl.textContent=GALLERY_STATE.photos.length.toLocaleString();
+}
+function renderGalleryGrid(gridId,labelId,emptyText){
+  const grid=document.getElementById(gridId);
+  if(!grid)return;
+  const label=document.getElementById(labelId);
+  if(label){
+    label.textContent=gridId==='admin-gallery-grid'
+      ?`Photo Queue (${GALLERY_STATE.photos.length})`
+      :`Community Photos (${GALLERY_STATE.photos.length})`;
+  }
+  if(!GALLERY_STATE.photos.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--muted)">${emptyText}</div>`;
+    return;
+  }
+  grid.innerHTML=GALLERY_STATE.photos.map(p=>`
+    <button type="button" class="gallery-card-btn" onclick="openGalleryPhoto(${p.id})">
+      <div class="gallery-item">
+        <img src="${p.image_url}" alt="photo" loading="lazy" onerror="this.style.display='none'"/>
+        <div class="gallery-item-footer">
+          <div class="gallery-item-user">
+            <span>@${escH(p.user_name)}</span>
+            ${p.can_manage?'<span class="gallery-manage-pill">Manage</span>':''}
+          </div>
+          <div class="gallery-item-thought">${p.thought?escH(p.thought):'<span style="color:var(--muted)">No caption added</span>'}</div>
+          <div class="gallery-item-time">${escH(formatGalleryTime(p.updated_at||p.created_at))}</div>
+        </div>
+      </div>
+    </button>`).join('');
+}
+function renderGalleryError(){
+  ['gallery-grid','admin-gallery-grid'].forEach(id=>{
+    const grid=document.getElementById(id);
+    if(grid)grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--danger)">Could not load photos right now.</div>';
+  });
+}
+function findGalleryPhoto(id){
+  return GALLERY_STATE.photos.find(p=>p.id===Number(id));
+}
+function formatGalleryTime(value){
+  return value?value.slice(0,16):'Just now';
+}
+function syncGalleryManageState(photo){
+  const actions=document.getElementById('gallery-detail-actions');
+  const hint=document.getElementById('gallery-detail-hint');
+  if(!photo)return;
+  if(photo.can_manage){
+    if(actions)actions.style.display='flex';
+    if(hint){
+      hint.textContent=photo.is_owner
+        ?'You can edit, replace, or delete your own photo here.'
+        :'Admin access: you can update or remove this user upload.';
+    }
+  }else{
+    if(actions)actions.style.display='none';
+    if(hint)hint.textContent='Only the uploader and admin can edit or delete this photo.';
+  }
+}
+function openGalleryPhoto(id,openModal=true){
+  const photo=findGalleryPhoto(id);
+  if(!photo)return;
+  GALLERY_STATE.selectedId=photo.id;
+  const image=document.getElementById('gallery-detail-image');
+  const user=document.getElementById('gallery-detail-user');
+  const created=document.getElementById('gallery-detail-created');
+  const updated=document.getElementById('gallery-detail-updated');
+  const thought=document.getElementById('gallery-detail-thought');
+  if(image)image.src=photo.image_url||'';
+  if(user)user.textContent='@'+photo.user_name;
+  if(created)created.textContent=formatGalleryTime(photo.created_at);
+  if(updated)updated.textContent=formatGalleryTime(photo.updated_at||photo.created_at);
+  if(thought){
+    thought.classList.toggle('is-empty',!photo.thought);
+    thought.textContent=photo.thought||'No caption added.';
+  }
+  hideGalleryEditPanel();
+  syncGalleryManageState(photo);
+  if(openModal){
+    const modal=document.getElementById('gallery-detail-modal');
+    if(modal)modal.classList.add('open');
+  }
+}
+function hideGalleryEditPanel(){
+  const panel=document.getElementById('gallery-edit-panel');
+  if(panel)panel.classList.remove('open');
+  clearGalleryEditFile();
+}
+function startGalleryEdit(){
+  const photo=findGalleryPhoto(GALLERY_STATE.selectedId);
+  if(!photo||!photo.can_manage)return;
+  const panel=document.getElementById('gallery-edit-panel');
+  const thought=document.getElementById('gallery-edit-thought');
+  const preview=document.getElementById('gallery-edit-preview-img');
+  const hint=document.getElementById('gallery-detail-hint');
+  const actions=document.getElementById('gallery-detail-actions');
+  if(thought)thought.value=photo.thought||'';
+  if(preview)preview.src=photo.image_url||'';
+  if(panel)panel.classList.add('open');
+  if(actions)actions.style.display='none';
+  if(hint)hint.textContent='Update the caption or replace the photo, then save your changes.';
+  clearGalleryEditFile();
+}
+function cancelGalleryEdit(){
+  hideGalleryEditPanel();
+  const photo=findGalleryPhoto(GALLERY_STATE.selectedId);
+  syncGalleryManageState(photo);
+}
+async function handleGalleryEditFile(e){
+  const file=e.target.files[0];
+  if(!validateGalleryFile(file))return;
+  GALLERY_STATE.editFile=file;
+  const name=document.getElementById('gallery-edit-file-name');
+  try{
+    const dataUrl=await readFileAsDataUrl(file);
+    const preview=document.getElementById('gallery-edit-preview-img');
+    if(preview)preview.src=dataUrl;
+    if(name)name.textContent=file.name;
+  }catch{
+    showToast('Could not preview image','error');
+  }
+}
+function clearGalleryEditFile(keepInput=false){
+  GALLERY_STATE.editFile=null;
+  const input=document.getElementById('gallery-edit-file-input');
+  const name=document.getElementById('gallery-edit-file-name');
+  const preview=document.getElementById('gallery-edit-preview-img');
+  const photo=findGalleryPhoto(GALLERY_STATE.selectedId);
+  if(input&&!keepInput)input.value='';
+  if(name)name.textContent='Keeping current photo';
+  if(preview&&photo)preview.src=`data:${photo.image_type};base64,${photo.image_data}`;
+}
+async function saveGalleryEdit(){
+  const photo=findGalleryPhoto(GALLERY_STATE.selectedId);
+  if(!photo||!photo.can_manage)return;
+  const btn=document.getElementById('gallery-save-btn');
+  const thought=document.getElementById('gallery-edit-thought');
+  const originalText=btn?btn.textContent:'';
+  const payload={thought:thought?thought.value.trim():''};
+  if(btn){btn.disabled=true;btn.textContent='Saving...';}
+  try{
+    if(GALLERY_STATE.editFile){
+      const dataUrl=await readFileAsDataUrl(GALLERY_STATE.editFile);
+      const [meta,b64]=dataUrl.split(',');
+      payload.image_data=b64;
+      payload.image_type=(meta.match(/:(.*?);/)||[])[1]||'image/jpeg';
+    }
+    const r=await fetch(`/api/gallery/${photo.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d=await r.json();
+    if(d.success){
+      showToast('Photo updated','success');
+      await loadGallery();
+      openGalleryPhoto(photo.id,false);
+    }else showToast(d.message||'Update failed','error');
+  }catch{
+    showToast('Update failed','error');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=originalText||'Save Changes';}
+  }
+}
+async function deleteSelectedGalleryPhoto(){
+  if(GALLERY_STATE.selectedId!=null)await deleteGalleryItem(GALLERY_STATE.selectedId);
+}
+async function deleteGalleryItem(id){
+  if(!confirm('Delete this photo?'))return;
+  const r=await fetch(`/api/gallery/${id}`,{method:'DELETE'});
+  const d=await r.json();
+  if(d.success){
+    if(GALLERY_STATE.selectedId===Number(id))closeGalleryPhoto();
+    showToast('Photo deleted','info');
+    await loadGallery();
+  }else showToast(d.message||'Failed','error');
+}
+function escH(s){
+  return String(s||'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

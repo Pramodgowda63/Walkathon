@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign In — Mitel Movers StepUp</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0a0c10;--surface:#111318;--card:#161a22;--border:#1e2433;--accent:#00e5a0;--accent2:#ff6b35;--accent3:#6c63ff;--danger:#ff4757;--text:#e8eaf0;--muted:#6b7280;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;
+background-image:radial-gradient(ellipse 80% 60% at 15% 20%,rgba(0,229,160,.07) 0%,transparent 50%),radial-gradient(ellipse 60% 50% at 85% 80%,rgba(108,99,255,.07) 0%,transparent 50%);}
+/* Admin pill top-right */
+.admin-pill{position:fixed;top:16px;right:16px;z-index:200;}
+.admin-pill-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem 1rem;border-radius:9px;background:rgba(108,99,255,.12);border:1px solid rgba(108,99,255,.3);color:var(--accent3);font-family:'DM Sans',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer;transition:all .2s;}
+.admin-pill-btn:hover{background:rgba(108,99,255,.22);}
+/* Admin modal overlay */
+.admin-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center;padding:1rem;}
+.admin-modal.open{display:flex;}
+.admin-modal-box{background:var(--card);border:1px solid rgba(108,99,255,.3);border-radius:20px;padding:2rem;width:100%;max-width:400px;position:relative;}
+.admin-modal-close{position:absolute;top:.85rem;right:.85rem;background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;line-height:1;}
+.wrap{width:100%;max-width:420px;}
+.logo{text-align:center;margin-bottom:2rem;}
+.logo h1{font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:800;}
+.logo h1 span{color:var(--accent);}
+.logo p{color:var(--muted);font-size:.9rem;margin-top:.3rem;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2rem;}
+.form-group{margin-bottom:.9rem;}
+label{display:block;font-size:.82rem;color:var(--muted);font-weight:600;margin-bottom:.35rem;}
+.input-wrap{position:relative;}
+input{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.78rem 1rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.92rem;outline:none;transition:border-color .2s;width:100%;}
+input:focus{border-color:var(--accent);}
+input[type=password]{padding-right:2.8rem;}
+.eye-btn{position:absolute;right:.7rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);display:flex;align-items:center;transition:color .2s;}
+.eye-btn:hover{color:var(--text);}
+.btn{width:100%;padding:.8rem;border-radius:10px;border:none;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;transition:all .2s;margin-top:.25rem;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:hover{background:#00c990;}
+.btn-primary:disabled{opacity:.6;pointer-events:none;}
+.btn-admin{background:var(--accent3);color:#fff;}
+.btn-admin:hover{background:#5a52d5;}
+.footer-link{text-align:center;font-size:.82rem;color:var(--muted);margin-top:1rem;}
+.footer-link a{color:var(--accent);text-decoration:none;font-weight:700;}
+.error-msg{background:rgba(255,71,87,.08);border:1px solid rgba(255,71,87,.2);border-radius:8px;padding:.6rem .85rem;font-size:.82rem;color:var(--danger);margin-bottom:.75rem;display:none;}
+.error-msg.show{display:block;}
+.admin-label{font-size:.82rem;font-weight:700;color:var(--accent3);margin-bottom:1rem;display:flex;align-items:center;gap:.4rem;}
+</style>
+</head>
+<body>
+
+<!-- ADMIN PILL TOP RIGHT -->
+<div class="admin-pill">
+  <button class="admin-pill-btn" onclick="openAdminModal()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    Admin Login
+  </button>
+</div>
+
+<!-- ADMIN LOGIN MODAL -->
+<div class="admin-modal" id="admin-modal" onclick="closeOnBg(event)">
+  <div class="admin-modal-box">
+    <button class="admin-modal-close" onclick="closeAdminModal()">✕</button>
+    <div class="admin-label">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Administrator Access
+    </div>
+    <div class="error-msg" id="admin-error"></div>
+    <div class="form-group">
+      <label>Admin Email</label>
+      <input type="email" id="ad-email" placeholder="admin@walkathon.com" autocomplete="email"/>
+    </div>
+    <div class="form-group">
+      <label>Admin Password</label>
+      <div class="input-wrap">
+        <input type="password" id="ad-pass" placeholder="Admin password" autocomplete="current-password"/>
+        <button type="button" class="eye-btn" onclick="toggleEye('ad-pass',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="17" height="17"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+    </div>
+    <button class="btn btn-admin" id="ad-btn" onclick="doLogin(true)">Sign In as Admin 🔐</button>
+  </div>
+</div>
+
+<!-- USER LOGIN CARD -->
+<div class="wrap">
+  <div class="logo">
+    <h1>Step<span>Up</span> 🏃</h1>
+    <p>Mitel Walk-a-Thon Challenge</p>
+  </div>
+  <div class="card">
+    <div class="error-msg" id="login-error"></div>
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="li-email" placeholder="your@email.com" autocomplete="email"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <div class="input-wrap">
+        <input type="password" id="li-pass" placeholder="Your password" autocomplete="current-password"/>
+        <button type="button" class="eye-btn" onclick="toggleEye('li-pass',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="17" height="17"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="li-btn" onclick="doLogin(false)">Sign In →</button>
+  </div>
+  <div class="footer-link">
+    Don't have an account? <a href="/register">Register here</a>
+  </div>
+</div>
+
+<script>
+function openAdminModal(){document.getElementById('admin-modal').classList.add('open');setTimeout(()=>document.getElementById('ad-email').focus(),100);}
+function closeAdminModal(){document.getElementById('admin-modal').classList.remove('open');document.getElementById('admin-error').classList.remove('show');}
+function closeOnBg(e){if(e.target===document.getElementById('admin-modal'))closeAdminModal();}
+
+function toggleEye(id,btn){
+  const inp=document.getElementById(id);
+  const show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.innerHTML=show
+    ?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="17" height="17"><line x1="1" y1="1" x2="23" y2="23"/><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/></svg>`
+    :`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="17" height="17"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+}
+
+async function doLogin(isAdmin){
+  const errEl=isAdmin?document.getElementById('admin-error'):document.getElementById('login-error');
+  errEl.classList.remove('show');
+  const email=isAdmin?document.getElementById('ad-email').value.trim():document.getElementById('li-email').value.trim();
+  const pass=isAdmin?document.getElementById('ad-pass').value:document.getElementById('li-pass').value;
+  if(!email||!pass){errEl.textContent='Please enter email and password.';errEl.classList.add('show');return;}
+  const btn=isAdmin?document.getElementById('ad-btn'):document.getElementById('li-btn');
+  btn.disabled=true;btn.textContent='Signing in...';
+  try{
+    const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass,admin:isAdmin})});
+    const data=await res.json();
+    if(data.success){location.href=data.redirect;}
+    else{errEl.textContent=data.message||'Login failed';errEl.classList.add('show');}
+  }catch{errEl.textContent='Connection error. Please try again.';errEl.classList.add('show');}
+  btn.disabled=false;btn.textContent=isAdmin?'Sign In as Admin 🔐':'Sign In →';
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    if(document.getElementById('admin-modal').classList.contains('open')) doLogin(true);
+    else doLogin(false);
+  }
+});
+</script>
+</body>
+</html>

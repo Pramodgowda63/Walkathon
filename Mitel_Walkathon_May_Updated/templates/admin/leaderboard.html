@@ -1,0 +1,181 @@
+{% extends "admin/base.html" %}
+{% block title %}Leaderboard — Admin{% endblock %}
+{% block page_title %}Full Leaderboard{% endblock %}
+
+{% block admin_content %}
+<div class="anim">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800">🏆 Complete Leaderboard</div>
+      <div style="color:var(--muted);font-size:.85rem">Full rankings — admin view only</div>
+    </div>
+    <div style="background:rgba(255,71,87,.08);border:1px solid rgba(255,71,87,.2);border-radius:8px;padding:.45rem .85rem;font-size:.8rem;color:var(--danger)">
+      🔒 Private — not visible to users
+    </div>
+  </div>
+
+  <div style="display:flex;gap:.4rem;margin-bottom:1.25rem;flex-wrap:wrap" id="lb-tabs">
+    <button class="btn btn-primary btn-sm" onclick="switchTab('individual')">👤 Individual</button>
+    <button class="btn btn-ghost btn-sm" onclick="switchTab('teams')">🏟️ Teams</button>
+    <button class="btn btn-ghost btn-sm" onclick="switchTab('today')">📅 Today</button>
+  </div>
+
+  <!-- INDIVIDUAL -->
+  <div id="tab-individual">
+    <div class="card" id="podium-card" style="margin-bottom:1.25rem;display:none">
+      <div style="display:flex;align-items:flex-end;justify-content:center;gap:1rem;padding:1rem 0" id="podium"></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+          <input id="lb-country-filter" type="text" placeholder="Filter by country or participant…" oninput="applyLeaderboardFilter()" style="min-width:240px;padding:.75rem .95rem;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:inherit;" />
+          <button class="btn btn-ghost btn-sm" onclick="clearLeaderboardFilter()">Clear</button>
+        </div>
+        <div style="color:var(--muted);font-size:.82rem">Filtered results are sorted by country name.</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Country</th><th>Team</th><th>Total Steps</th><th>Total km</th><th>Calories</th></tr></thead>
+          <tbody id="lb-individual-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEAMS -->
+  <div id="tab-teams" style="display:none">
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Team</th><th>Members</th><th>Total Steps</th><th>Total km</th></tr></thead>
+          <tbody id="lb-teams-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TODAY -->
+  <div id="tab-today" style="display:none">
+    <div class="card">
+      <div class="sec-title">📅 Top Walkers Today</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Team</th><th>Steps Today</th></tr></thead>
+          <tbody id="lb-today-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let lbData={};
+function switchTab(t){
+  ['individual','teams','today'].forEach(s=>{document.getElementById('tab-'+s).style.display=s===t?'block':'none';});
+  document.querySelectorAll('#lb-tabs .btn').forEach((b,i)=>{
+    b.className='btn btn-sm '+((['individual','teams','today'][i]===t)?'btn-primary':'btn-ghost');
+  });
+}
+const medals=['🥇','🥈','🥉'];
+function flagEmoji(value){
+  if(!value) return '';
+  if(/^[A-Za-z]{2}$/.test(value)){
+    const up=value.toUpperCase();
+    return String.fromCodePoint(127397+up.codePointAt(0),127397+up.codePointAt(1));
+  }
+  return value;
+}
+function normalizeCountry(country){
+  if(!country) return '';
+  return country.replace(/^([A-Z]{2}\s+)+/,'').trim();
+}
+function formatCountryCell(u){
+  if(u.country_display) {
+    return `<span class="badge-tag badge-blue" style="background:rgba(108,99,255,.1);border-color:rgba(108,99,255,.2);color:var(--accent3)">${u.country_display}</span>`;
+  }
+  const name = normalizeCountry(u.country);
+  if(!name) return '<span style="color:var(--muted)">—</span>';
+  const flag = u.country_flag ? flagEmoji(u.country_flag) : '';
+  return `<span class="badge-tag badge-blue" style="background:rgba(108,99,255,.1);border-color:rgba(108,99,255,.2);color:var(--accent3)">${flag?`${flag} `:''}${name}</span>`;
+}
+function renderIndividualTable(rows){
+  document.getElementById('lb-individual-body').innerHTML = rows.map((u,i)=>`
+    <tr>
+      <td>${i<3?medals[i]:'<span style="color:var(--muted)">'+(i+1)+'</span>'}</td>
+      <td><strong>${u.name}</strong></td>
+      <td>${formatCountryCell(u)}</td>
+      <td>${u.team?`<span class="badge-tag badge-purple">${u.team}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td><span class="badge-tag badge-green">${u.total_steps.toLocaleString()}</span></td>
+      <td style="color:var(--accent3)">${u.total_km}</td>
+      <td>${u.total_calories!=null?`<span class="badge-tag badge-orange">🔥 ${u.total_calories.toLocaleString()} kcal</span>`:'—'}</td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No data yet</td></tr>';
+}
+function applyLeaderboardFilter(){
+  const q=document.getElementById('lb-country-filter').value.trim().toLowerCase();
+  let rows=lbData.individual.slice();
+  if(q){
+    rows=rows.filter(u=>{
+      const name=u.name.toLowerCase();
+      const country=normalizeCountry(u.country).toLowerCase();
+      return name.includes(q) || country.includes(q);
+    }).sort((a,b)=>{
+      const aC=normalizeCountry(a.country).toLowerCase();
+      const bC=normalizeCountry(b.country).toLowerCase();
+      if(aC!==bC) return aC.localeCompare(bC);
+      if(a.total_steps!==b.total_steps) return b.total_steps - a.total_steps;
+      return a.name.localeCompare(b.name);
+    });
+  }
+  renderIndividualTable(rows);
+}
+function clearLeaderboardFilter(){
+  document.getElementById('lb-country-filter').value='';
+  applyLeaderboardFilter();
+}
+async function loadLeaderboard(){
+  const r=await fetch('/api/admin/leaderboard-data');
+  lbData=await r.json();
+
+  // Podium
+  if(lbData.individual.length>=3){
+    const p=lbData.individual;
+    const order=[p[0],p[1],p[2]];
+    const heights=[80,60,45];
+    const colors=['#ffd700','#c0c0c0','#cd7f32'];
+    document.getElementById('podium-card').style.display='block';
+    document.getElementById('podium').innerHTML=order.map((u,i)=>`
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;flex:1;max-width:160px">
+        <div style="width:52px;height:52px;border-radius:50%;background:${colors[i]}22;border:2px solid ${colors[i]};display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:800;color:${colors[i]};margin-bottom:.4rem">${(u?.name||'?')[0].toUpperCase()}</div>
+        <div style="font-weight:700;font-size:.82rem">${u?.name||'—'}</div>
+        <div style="font-size:.72rem;color:var(--muted)">${u?.team||'—'}</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;color:var(--accent);font-size:.88rem">${(u?.total_steps||0).toLocaleString()}</div>
+        <div style="width:100%;height:${heights[i]}px;background:${colors[i]}15;border:1px solid ${colors[i]}44;border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-top:.35rem">${medals[i]}</div>
+      </div>`).join('');
+  }
+
+  applyLeaderboardFilter();
+
+  // Teams table
+  document.getElementById('lb-teams-body').innerHTML=lbData.teams.map((t,i)=>`
+    <tr>
+      <td>${i<3?medals[i]:'<span style="color:var(--muted)">'+(i+1)+'</span>'}</td>
+      <td><strong>${t.team}</strong></td>
+      <td style="color:var(--muted)">${t.members}</td>
+      <td><span class="badge-tag badge-green">${t.total_steps.toLocaleString()}</span></td>
+      <td style="color:var(--accent3)">${t.total_km}</td>
+    </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">No teams yet</td></tr>';
+
+  // Today table
+  document.getElementById('lb-today-body').innerHTML=lbData.today_active.map((u,i)=>`
+    <tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td><strong>${u.user_name||u.name}</strong></td>
+      <td>${u.team_name?`<span class="badge-tag badge-purple">${u.team_name}</span>`:'—'}</td>
+      <td><span class="badge-tag badge-green">${(u.steps||0).toLocaleString()}</span></td>
+    </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:2rem">No activity today</td></tr>';
+}
+document.addEventListener('DOMContentLoaded',loadLeaderboard);
+</script>
+{% endblock %}

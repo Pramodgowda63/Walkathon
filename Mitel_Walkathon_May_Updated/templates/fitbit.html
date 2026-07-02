@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Fitbit Sync — StepUp{% endblock %}
+{% block page_title %}Fitbit Sync{% endblock %}
+
+{% block sidebar_menu %}
+<a href="/dashboard" class="nav-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+</a>
+<a href="/team" class="nav-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>My Team
+</a>
+<a href="/stepcounter" class="nav-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="3" stroke-linecap="round"/></svg>Auto Counter
+</a>
+<a href="/fitbit" class="nav-link active">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Fitbit Sync
+</a>
+{% endblock %}
+
+{% block head %}
+<style>
+.fitbit-hero{text-align:center;padding:1.5rem;background:linear-gradient(135deg,rgba(0,229,160,.06),rgba(108,99,255,.06));border:1px solid var(--border);border-radius:18px;margin-bottom:1.5rem;}
+.fitbit-logo{font-size:3rem;margin-bottom:.75rem;}
+.fitbit-status{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-radius:999px;font-size:.85rem;font-weight:700;}
+.fitbit-status.connected{background:rgba(0,229,160,.1);color:var(--accent);border:1px solid rgba(0,229,160,.3);}
+.fitbit-status.disconnected{background:rgba(255,71,87,.08);color:var(--danger);border:1px solid rgba(255,71,87,.2);}
+.step-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:.65rem;display:flex;align-items:center;justify-content:space-between;}
+.step-date{font-weight:700;font-size:.9rem;}
+.step-count{font-family:'Syne',sans-serif;font-weight:800;color:var(--accent);}
+.setup-steps{counter-reset:step;}
+.setup-step{display:flex;gap:1rem;margin-bottom:1.25rem;counter-increment:step;}
+.setup-step::before{content:counter(step);min-width:28px;height:28px;border-radius:50%;background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.3);color:var(--accent3);font-weight:800;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.setup-step-content{flex:1;}
+.setup-step-content strong{display:block;font-size:.9rem;margin-bottom:.2rem;}
+.setup-step-content span{font-size:.8rem;color:var(--muted);line-height:1.5;}
+.code-badge{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.2rem .5rem;font-family:monospace;font-size:.82rem;color:var(--accent);}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="anim">
+
+  <!-- STATUS HERO -->
+  <div class="fitbit-hero">
+    <div class="fitbit-logo">⌚</div>
+    <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;margin-bottom:.4rem">Fitbit Integration</div>
+    <div style="color:var(--muted);font-size:.88rem;margin-bottom:1rem">Sync your steps automatically from your Fitbit device</div>
+    {% if connected %}
+      <div class="fitbit-status connected">✅ Fitbit Connected</div>
+    {% else %}
+      <div class="fitbit-status disconnected">🔌 Not Connected</div>
+    {% endif %}
+  </div>
+
+  {% if not has_config %}
+  <!-- NO CONFIG -->
+  <div class="card" style="margin-bottom:1.25rem">
+    <div class="sec-title">⚙️ Setup Required</div>
+    <div style="background:rgba(255,176,32,.07);border:1px solid rgba(255,176,32,.2);border-radius:10px;padding:.85rem;margin-bottom:1.25rem;font-size:.85rem;color:var(--warn)">
+      ⚠️ Fitbit is not configured yet. Ask your admin to add the Fitbit API credentials in the Admin Panel.
+    </div>
+    <div class="setup-steps">
+      <div class="setup-step">
+        <div class="setup-step-content">
+          <strong>Admin: Go to dev.fitbit.com</strong>
+          <span>Sign in and create a new app. Set the Application Type to "Personal" and Callback URL to <span class="code-badge">https://yourdomain.com/fitbit/callback</span> (use <span class="code-badge">http://localhost:5000/fitbit/callback</span> for local dev)</span>
+        </div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-step-content">
+          <strong>Copy the Client ID and Client Secret</strong>
+          <span>From your Fitbit app settings, copy both values.</span>
+        </div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-step-content">
+          <strong>Enter in Admin Panel → Settings</strong>
+          <span>Go to Admin → Settings and paste the credentials. Then users can connect their Fitbit.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% elif connected %}
+  <!-- CONNECTED STATE -->
+  <div class="grid-2" style="margin-bottom:1.25rem">
+    <div class="card">
+      <div class="sec-title">🔄 Sync Steps</div>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem">Pull your step data from Fitbit for the last N days. Existing Fitbit entries for those days will be replaced.</p>
+      <div style="margin-bottom:.85rem">
+        <label style="font-size:.82rem;color:var(--muted);display:block;margin-bottom:.35rem">Days to sync</label>
+        <select id="sync-days" style="max-width:180px">
+          <option value="1">Today only</option>
+          <option value="3">Last 3 days</option>
+          <option value="7" selected>Last 7 days</option>
+          <option value="14">Last 14 days</option>
+          <option value="30">Last 30 days</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="sync-btn" onclick="syncFitbit()">🔄 Sync Now</button>
+    </div>
+    <div class="card">
+      <div class="sec-title">🔌 Disconnect</div>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem">Disconnect your Fitbit account. Your existing synced data will remain but no new syncs will happen.</p>
+      <button class="btn btn-danger" onclick="disconnectFitbit()">Disconnect Fitbit</button>
+    </div>
+  </div>
+
+  <div class="card" id="sync-results" style="display:none">
+    <div class="sec-title">✅ Sync Results</div>
+    <div id="sync-result-list"></div>
+  </div>
+
+  {% else %}
+  <!-- NOT CONNECTED -->
+  <div class="card">
+    <div class="sec-title">🔗 Connect Your Fitbit</div>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:1.25rem">Connect your Fitbit account to automatically sync your step data. You'll be redirected to Fitbit to authorize access.</p>
+    <a href="/fitbit/connect" class="btn btn-primary" style="display:inline-flex;max-width:200px">Connect Fitbit ⌚</a>
+  </div>
+  {% endif %}
+
+  <!-- HOW IT WORKS -->
+  <div class="card">
+    <div class="sec-title">ℹ️ How Fitbit Sync Works</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.85rem;font-size:.85rem">
+      <div style="background:var(--surface);border-radius:10px;padding:.85rem">
+        <div style="font-size:1.3rem;margin-bottom:.4rem">🔐</div>
+        <strong>Secure OAuth</strong>
+        <div style="color:var(--muted);font-size:.78rem;margin-top:.25rem">We never store your Fitbit password. Only step data is accessed.</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:.85rem">
+        <div style="font-size:1.3rem;margin-bottom:.4rem">📊</div>
+        <strong>Steps Only</strong>
+        <div style="color:var(--muted);font-size:.78rem;margin-top:.25rem">Only daily step totals are synced — no heart rate, sleep or other data.</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:.85rem">
+        <div style="font-size:1.3rem;margin-bottom:.4rem">🔄</div>
+        <strong>Manual Sync</strong>
+        <div style="color:var(--muted);font-size:.78rem;margin-top:.25rem">Click Sync Now whenever you want to import your latest Fitbit steps.</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:.85rem">
+        <div style="font-size:1.3rem;margin-bottom:.4rem">✏️</div>
+        <strong>Editable</strong>
+        <div style="color:var(--muted);font-size:.78rem;margin-top:.25rem">Synced entries appear in your Dashboard history and can be edited.</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function syncFitbit(){
+  const days=document.getElementById('sync-days').value;
+  const btn=document.getElementById('sync-btn');
+  btn.disabled=true;btn.textContent='Syncing...';
+  try{
+    const r=await fetch('/api/fitbit/sync',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({days:parseInt(days)})});
+    const d=await r.json();
+    if(d.success){
+      const el=document.getElementById('sync-results');
+      const list=document.getElementById('sync-result-list');
+      el.style.display='block';
+      if(d.synced.length===0){
+        list.innerHTML='<div style="color:var(--muted);font-size:.88rem">No steps found for the selected period.</div>';
+      }else{
+        list.innerHTML=d.synced.map(s=>`
+          <div class="step-card">
+            <div class="step-date">${s.date}</div>
+            <div class="step-count">${s.steps.toLocaleString()} steps</div>
+            <span class="badge-tag badge-purple">📱 Fitbit</span>
+          </div>`).join('');
+        showToast(`Synced ${d.synced.length} day(s) from Fitbit ✅`,'success');
+      }
+    }else showToast(d.message||'Sync failed','error');
+  }catch{showToast('Connection error','error');}
+  btn.disabled=false;btn.textContent='🔄 Sync Now';
+}
+async function disconnectFitbit(){
+  if(!confirm('Disconnect your Fitbit account?'))return;
+  const r=await fetch('/fitbit/disconnect',{method:'POST'});
+  const d=await r.json();
+  if(d.success){showToast('Fitbit disconnected','info');setTimeout(()=>location.reload(),800);}
+}
+</script>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}My Team — StepUp{% endblock %}
+{% block page_title %}My Team{% endblock %}
+
+{% block sidebar_menu %}
+<a href="/dashboard" class="nav-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+</a>
+<a href="/team" class="nav-link active">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>My Team
+</a>
+<a href="/stepcounter" class="nav-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="3" stroke-linecap="round"/></svg>Auto Counter
+</a>
+<a href="/fitbit" class="nav-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Fitbit Sync
+</a>
+{% endblock %}
+
+{% block content %}
+<div id="team-content" class="anim"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadTeam(){
+  const r=await fetch('/api/team-data');
+  if(r.status===401){location.href='/login';return;}
+  const d=await r.json();
+  const el=document.getElementById('team-content');
+
+  if(!d.in_team){
+    el.innerHTML=`
+      <div class="card" style="padding:2rem;margin-bottom:1.5rem">
+        <div style="text-align:center;padding:1.5rem 0">
+          <div style="font-size:3rem;margin-bottom:1rem">👥</div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:.5rem">You're not in a team yet</div>
+          <div style="color:var(--muted);margin-bottom:1.5rem">Join or create a team to connect with colleagues.</div>
+        </div>
+        
+        <div class="form-group">
+          <label style="display:block;font-size:.82rem;color:var(--muted);font-weight:600;margin-bottom:.5rem">Join Existing Team</label>
+          <div style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;">
+            <input type="text" id="join-invite-code" placeholder="Enter invite code (e.g., ABC123)" style="flex:1;min-width:150px;padding:.65rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;"/>
+            <button onclick="doJoinTeam()" style="padding:.65rem 1.5rem;background:var(--accent);color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;font-size:.85rem;">Join Team</button>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:.75rem;margin:1.5rem 0;color:var(--muted);font-size:.85rem;">
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <span>OR</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>
+
+        <div class="form-group">
+          <label style="display:block;font-size:.82rem;color:var(--muted);font-weight:600;margin-bottom:.5rem">Create New Team</label>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            <input type="text" id="create-team-name" placeholder="Team name (e.g., Marketing Crew)" style="flex:1;min-width:150px;padding:.65rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;"/>
+            <button onclick="doCreateTeam()" style="padding:.65rem 1.5rem;background:rgba(0,229,160,.2);color:var(--accent);border:1px solid rgba(0,229,160,.3);border-radius:8px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;font-size:.85rem;">Create Team</button>
+          </div>
+        </div>
+        
+        <div id="team-status" style="margin-top:1rem;font-size:.82rem;display:none;"></div>
+      </div>`;
+    return;
+  }
+
+  const myStats=`
+    <div style="grid-column:span 2" class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800">🏟️ ${d.team_name}</div>
+          <div style="color:var(--muted);font-size:.85rem;margin-top:.25rem">${d.members.length} member${d.members.length!==1?'s':''}</div>
+        </div>
+        <div style="background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:10px;padding:.65rem 1.1rem;text-align:center">
+          <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.2rem">Invite Code</div>
+          <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:var(--accent);letter-spacing:.1em">${d.invite_code}</div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:.15rem">Share with colleagues</div>
+        </div>
+      </div>
+    </div>
+    <div class="stat-card"><div class="stat-icon">👟</div><div class="stat-val">${(d.team_total||0).toLocaleString()}</div><div class="stat-lbl">Team Total Steps</div></div>
+    <div class="stat-card c-purple"><div class="stat-icon">📏</div><div class="stat-val">${d.team_km||0}</div><div class="stat-lbl">Team Total km</div></div>
+    <div class="stat-card c-orange"><div class="stat-icon">📅</div><div class="stat-val">${(d.today_total||0).toLocaleString()}</div><div class="stat-lbl">Team Steps Today</div></div>`;
+
+  const memberRows=d.members.map(m=>`
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:.65rem">
+          <div style="width:32px;height:32px;border-radius:50%;background:${m.is_me?'rgba(0,229,160,.15)':'rgba(255,255,255,.06)'};border:2px solid ${m.is_me?'rgba(0,229,160,.4)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:${m.is_me?'var(--accent)':'var(--muted)'}">
+            ${m.name.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <strong>${m.name}</strong>${m.is_me?' <span class="badge-tag badge-green" style="font-size:.68rem">You</span>':''}
+            ${m.country_display?`<div style="font-size:.75rem;color:var(--muted);margin-top:.2rem">${m.country_display}</div>`:''}
+          </div>
+        </div>
+      </td>
+      <td style="color:var(--muted)">Member</td>
+    </tr>`).join('');
+
+  el.innerHTML=`
+    <div class="grid-4" style="margin-bottom:1.25rem">${myStats}</div>
+    <div class="card">
+      <div class="sec-title">👥 Team Members</div>
+      <div style="background:rgba(108,99,255,.06);border:1px solid rgba(108,99,255,.15);border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.82rem;color:var(--muted)">
+        🔒 Individual step counts are private. Only you and admins can see your personal step data.
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Member</th><th>Role</th></tr></thead>
+          <tbody>${memberRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+document.addEventListener('DOMContentLoaded',loadTeam);
+
+async function doJoinTeam(){
+  const code=(document.getElementById('join-invite-code').value||'').trim().toUpperCase();
+  const statusEl=document.getElementById('team-status');
+  if(!code){
+    statusEl.textContent='❌ Please enter an invite code';
+    statusEl.style.background='rgba(255,71,87,.08)';
+    statusEl.style.color='#ff4757';
+    statusEl.style.display='block';
+    statusEl.style.padding='.75rem 1rem';
+    statusEl.style.borderRadius='8px';
+    statusEl.style.border='1px solid rgba(255,71,87,.2)';
+    return;
+  }
+  try{
+    const res=await fetch('/api/join-team',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({invite_code:code})});
+    const data=await res.json();
+    if(data.success){
+      statusEl.textContent='✅ '+data.message;
+      statusEl.style.background='rgba(0,229,160,.08)';
+      statusEl.style.color='var(--accent)';
+      statusEl.style.display='block';
+      statusEl.style.padding='.75rem 1rem';
+      statusEl.style.borderRadius='8px';
+      statusEl.style.border='1px solid rgba(0,229,160,.2)';
+      setTimeout(()=>loadTeam(),1500);
+    }else{
+      statusEl.textContent='❌ '+data.message;
+      statusEl.style.background='rgba(255,71,87,.08)';
+      statusEl.style.color='#ff4757';
+      statusEl.style.display='block';
+      statusEl.style.padding='.75rem 1rem';
+      statusEl.style.borderRadius='8px';
+      statusEl.style.border='1px solid rgba(255,71,87,.2)';
+    }
+  }catch(e){
+    statusEl.textContent='❌ Error joining team';
+    statusEl.style.background='rgba(255,71,87,.08)';
+    statusEl.style.color='#ff4757';
+    statusEl.style.display='block';
+    statusEl.style.padding='.75rem 1rem';
+    statusEl.style.borderRadius='8px';
+    statusEl.style.border='1px solid rgba(255,71,87,.2)';
+  }
+}
+
+async function doCreateTeam(){
+  const name=(document.getElementById('create-team-name').value||'').trim();
+  const statusEl=document.getElementById('team-status');
+  if(!name){
+    statusEl.textContent='❌ Please enter a team name';
+    statusEl.style.background='rgba(255,71,87,.08)';
+    statusEl.style.color='#ff4757';
+    statusEl.style.display='block';
+    statusEl.style.padding='.75rem 1rem';
+    statusEl.style.borderRadius='8px';
+    statusEl.style.border='1px solid rgba(255,71,87,.2)';
+    return;
+  }
+  try{
+    const res=await fetch('/api/create-team',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({team_name:name})});
+    const data=await res.json();
+    if(data.success){
+      statusEl.textContent='✅ '+data.message;
+      statusEl.style.background='rgba(0,229,160,.08)';
+      statusEl.style.color='var(--accent)';
+      statusEl.style.display='block';
+      statusEl.style.padding='.75rem 1rem';
+      statusEl.style.borderRadius='8px';
+      statusEl.style.border='1px solid rgba(0,229,160,.2)';
+      setTimeout(()=>loadTeam(),1500);
+    }else{
+      statusEl.textContent='❌ '+data.message;
+      statusEl.style.background='rgba(255,71,87,.08)';
+      statusEl.style.color='#ff4757';
+      statusEl.style.display='block';
+      statusEl.style.padding='.75rem 1rem';
+      statusEl.style.borderRadius='8px';
+      statusEl.style.border='1px solid rgba(255,71,87,.2)';
+    }
+  }catch(e){
+    statusEl.textContent='❌ Error creating team';
+    statusEl.style.background='rgba(255,71,87,.08)';
+    statusEl.style.color='#ff4757';
+    statusEl.style.display='block';
+    statusEl.style.padding='.75rem 1rem';
+    statusEl.style.borderRadius='8px';
+    statusEl.style.border='1px solid rgba(255,71,87,.2)';
+  }
+}
+</script>
+{% endblock %}

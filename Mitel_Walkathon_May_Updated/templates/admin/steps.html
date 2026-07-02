@@ -1,0 +1,168 @@
+{% extends "admin/base.html" %}
+{% block title %}Step Entries — Admin{% endblock %}
+{% block page_title %}Step Entries{% endblock %}
+
+{% block admin_content %}
+<div class="anim">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800">All Step Entries</div>
+      <div style="color:var(--muted);font-size:.85rem">Full CRUD — edit or delete any entry</div>
+    </div>
+    <a href="/api/admin/export?type=full" class="btn btn-ghost btn-sm">⬇ Export Full CSV</a>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="card" style="margin-bottom:1.25rem">
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+      <div>
+        <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:.3rem">Filter by User</label>
+        <select id="f-user" style="width:180px" onchange="loadSteps(1)">
+          <option value="">All Users</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:.3rem">Filter by Date</label>
+        <input type="date" id="f-date" onchange="loadSteps(1)" style="width:160px"/>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Clear</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>User</th><th>Date</th><th>Steps</th><th>km</th><th>Calories</th><th>Note</th><th>Source</th><th>Logged At</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="steps-body">
+          <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2rem">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- PAGINATION -->
+    <div id="pagination" style="display:flex;gap:.4rem;justify-content:center;margin-top:1rem;flex-wrap:wrap"></div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">✏️ Edit Step Entry <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <input type="hidden" id="edit-id"/>
+    <div class="form-group"><label class="form-label">User</label><input type="text" id="edit-user" disabled style="opacity:.6"/></div>
+    <div class="form-group"><label class="form-label">Steps</label><input type="number" id="edit-steps" min="1" max="100000"/></div>
+    <div class="form-group"><label class="form-label">Date</label><input type="date" id="edit-date" max=""/></div>
+    <div class="form-group"><label class="form-label">Note</label><input type="text" id="edit-note" placeholder="Optional note"/></div>
+    <div style="display:flex;gap:.65rem;margin-top:.5rem">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TODAY=new Date().toISOString().slice(0,10);
+document.getElementById('edit-date').max=TODAY;
+let currentPage=1,totalPages=1;
+
+async function loadSteps(page=1){
+  currentPage=page;
+  const uid=document.getElementById('f-user').value;
+  const dt=document.getElementById('f-date').value;
+  let url=`/api/admin/steps?page=${page}`;
+  if(uid)url+=`&user_id=${uid}`;
+  if(dt)url+=`&date=${dt}`;
+  const r=await fetch(url);
+  const d=await r.json();
+
+  // Populate user filter once
+  if(page===1){
+    const sel=document.getElementById('f-user');
+    const cur=sel.value;
+    sel.innerHTML='<option value="">All Users</option>'+d.users.map(u=>`<option value="${u.id}" ${u.id==cur?'selected':''}>${u.name}</option>`).join('');
+  }
+
+  totalPages=Math.ceil(d.total/d.per_page)||1;
+  const tb=document.getElementById('steps-body');
+
+  if(!d.entries.length){
+    tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2rem">No entries found</td></tr>';
+    document.getElementById('pagination').innerHTML='';
+    return;
+  }
+
+  tb.innerHTML=d.entries.map(e=>{
+    const srcBadge=e.source==='fitbit'?'badge-purple':e.source==='auto'?'badge-purple':'badge-gray';
+    const srcLabel=e.source==='fitbit'?'📱 Fitbit':e.source==='auto'?'📱 Auto':'Manual';
+    const calStr=e.calories!=null?`<span class="badge-tag badge-orange">🔥 ${e.calories}</span>`:'—';
+    return`<tr>
+      <td><div><strong>${e.user_name}</strong>${e.country_display?`<div style="font-size:.75rem;color:var(--muted);margin-top:.2rem">${e.country_display}</div>`:''}</div></td>
+      <td>${e.date}</td>
+      <td><span class="badge-tag badge-green">${e.steps.toLocaleString()}</span></td>
+      <td style="color:var(--accent3)">${e.km}</td>
+      <td>${calStr}</td>
+      <td style="color:var(--muted);max-width:100px;overflow:hidden;text-overflow:ellipsis">${e.note||'—'}</td>
+      <td><span class="badge-tag ${srcBadge}">${srcLabel}</span></td>
+      <td style="color:var(--muted);font-size:.78rem">${e.created_at}</td>
+      <td style="display:flex;gap:.3rem">
+        <button class="btn btn-warning btn-sm" onclick="openEdit(${e.id},'${e.user_name}',${e.steps},'${e.date}','${(e.note||'').replace(/'/g,"\\'")}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="delEntry(${e.id})">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Pagination
+  const pg=document.getElementById('pagination');
+  let btns='';
+  if(currentPage>1)btns+=`<button class="btn btn-ghost btn-sm" onclick="loadSteps(${currentPage-1})">← Prev</button>`;
+  for(let i=Math.max(1,currentPage-2);i<=Math.min(totalPages,currentPage+2);i++){
+    btns+=`<button class="btn btn-sm ${i===currentPage?'btn-primary':'btn-ghost'}" onclick="loadSteps(${i})">${i}</button>`;
+  }
+  if(currentPage<totalPages)btns+=`<button class="btn btn-ghost btn-sm" onclick="loadSteps(${currentPage+1})">Next →</button>`;
+  pg.innerHTML=btns;
+}
+
+function openEdit(id,user,steps,dt,note){
+  document.getElementById('edit-id').value=id;
+  document.getElementById('edit-user').value=user;
+  document.getElementById('edit-steps').value=steps;
+  document.getElementById('edit-date').value=dt;
+  document.getElementById('edit-note').value=note;
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeModal(){document.getElementById('edit-modal').classList.remove('open');}
+
+async function saveEdit(){
+  const id=document.getElementById('edit-id').value;
+  const steps=parseInt(document.getElementById('edit-steps').value);
+  const dt=document.getElementById('edit-date').value;
+  const note=document.getElementById('edit-note').value;
+  if(!steps||steps<=0){showToast('Enter valid steps','error');return;}
+  if(dt>TODAY){showToast('Cannot set future date','error');return;}
+  const r=await fetch(`/api/steps/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({steps,date:dt,note})});
+  const d=await r.json();
+  if(d.success){showToast('Entry updated ✅','success');closeModal();loadSteps(currentPage);}
+  else showToast(d.message||'Failed','error');
+}
+
+async function delEntry(id){
+  if(!confirm('Delete this step entry?'))return;
+  const r=await fetch(`/api/steps/${id}`,{method:'DELETE'});
+  const d=await r.json();
+  if(d.success){showToast('Deleted','info');loadSteps(currentPage);}
+  else showToast(d.message||'Failed','error');
+}
+
+function clearFilters(){
+  document.getElementById('f-user').value='';
+  document.getElementById('f-date').value='';
+  loadSteps(1);
+}
+
+document.addEventListener('DOMContentLoaded',()=>loadSteps(1));
+</script>
+{% endblock %}

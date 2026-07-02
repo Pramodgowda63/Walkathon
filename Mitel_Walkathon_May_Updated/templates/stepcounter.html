@@ -1,0 +1,1357 @@
+{% extends "base.html" %}
+{% block title %}Hybrid Step Counter - StepUp{% endblock %}
+{% block page_title %}Hybrid Step Counter{% endblock %}
+
+{% block sidebar_menu %}
+<a href="/dashboard" class="nav-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+</a>
+<a href="/team" class="nav-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>My Team
+</a>
+<a href="/stepcounter" class="nav-link active">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="3" stroke-linecap="round"/></svg>Hybrid Counter
+</a>
+<a href="/fitbit" class="nav-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Fitbit Sync
+</a>
+{% endblock %}
+
+{% block head %}
+<style>
+.sc-wrap{max-width:560px;margin:0 auto;}
+.sc-hero{margin-bottom:1rem;text-align:center;}
+.sc-kicker{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .8rem;border-radius:999px;background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.18);color:var(--accent);font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:.9rem;}
+.sc-hero h2{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;line-height:1.05;margin-bottom:.55rem;}
+.sc-hero p{color:var(--muted);font-size:.92rem;line-height:1.7;}
+.sc-panel{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1rem 1.05rem;margin-bottom:1rem;}
+.sc-panel h4{font-size:.9rem;font-weight:700;margin-bottom:.45rem;}
+.sc-panel p{font-size:.82rem;line-height:1.6;color:var(--muted);}
+.secure-box{background:rgba(255,71,87,.08);border-color:rgba(255,71,87,.28);}
+.secure-box h4{color:var(--danger);}
+.perm-box{background:rgba(255,176,32,.08);border-color:rgba(255,176,32,.26);display:none;}
+.perm-box h4{color:var(--warn);}
+.limit-box{background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.22);}
+.limit-box h4{color:var(--info);}
+.sc-options{display:grid;gap:.9rem;}
+.sc-option-row{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center;justify-content:space-between;}
+.sc-label{font-size:.76rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.sc-toggle{display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.2rem;gap:.2rem;}
+.sc-toggle-btn{border:none;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:700;padding:.55rem .95rem;border-radius:10px;cursor:pointer;transition:all .2s;}
+.sc-toggle-btn.active{background:rgba(0,229,160,.12);color:var(--accent);}
+.sc-toggle-btn.manual.active{background:rgba(108,99,255,.14);color:var(--accent3);}
+.sc-switch-list{display:grid;gap:.7rem;}
+.sc-switch{display:flex;align-items:flex-start;justify-content:space-between;gap:.8rem;padding:.8rem .9rem;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:14px;}
+.sc-switch-copy{flex:1;}
+.sc-switch-copy strong{display:block;font-size:.88rem;margin-bottom:.2rem;}
+.sc-switch-copy span{display:block;font-size:.78rem;line-height:1.55;color:var(--muted);}
+.sc-switch input{width:20px;height:20px;margin-top:.2rem;accent-color:var(--accent);}
+.sc-status-row{display:flex;gap:.55rem;flex-wrap:wrap;justify-content:center;margin-bottom:1rem;}
+.sc-status{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.38rem .9rem;border-radius:999px;font-size:.82rem;font-weight:700;border:1px solid transparent;transition:all .25s;}
+.sc-status.idle{background:rgba(107,114,128,.1);color:var(--muted);border-color:rgba(107,114,128,.18);}
+.sc-status.running{background:rgba(0,229,160,.1);color:var(--accent);border-color:rgba(0,229,160,.25);}
+.sc-status.waiting{background:rgba(255,176,32,.1);color:var(--warn);border-color:rgba(255,176,32,.25);}
+.sc-status.stopped{background:rgba(255,71,87,.07);color:var(--danger);border-color:rgba(255,71,87,.22);}
+.sc-chip{display:inline-flex;align-items:center;gap:.35rem;padding:.38rem .75rem;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:.76rem;color:var(--muted);}
+.sc-chip.good{color:var(--accent);border-color:rgba(0,229,160,.2);}
+.sc-chip.warn{color:var(--warn);border-color:rgba(255,176,32,.25);}
+.sc-chip.bad{color:var(--danger);border-color:rgba(255,71,87,.22);}
+.sc-chip.info{color:var(--info);border-color:rgba(56,189,248,.2);}
+.sc-ring{width:230px;height:230px;border-radius:50%;margin:0 auto 1.3rem;display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 0 50px rgba(0,229,160,.12);}
+.sc-ring::before{content:'';position:absolute;inset:14px;border-radius:50%;background:var(--card);}
+.sc-inner{position:relative;z-index:1;text-align:center;}
+.sc-num{font-family:'Syne',sans-serif;font-size:3rem;font-weight:800;line-height:1;color:var(--accent);}
+.sc-lbl{font-size:.82rem;color:var(--muted);margin-top:.2rem;}
+.sc-sub{font-size:.76rem;color:var(--muted);margin-top:.55rem;}
+.sc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1rem;}
+.sc-stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:.9rem .6rem;text-align:center;}
+.sc-stat-val{font-family:'Syne',sans-serif;font-size:1.18rem;font-weight:800;color:var(--accent2);}
+.sc-stat-lbl{font-size:.72rem;color:var(--muted);margin-top:.22rem;}
+.sc-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1rem;}
+.sc-meta-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:.8rem .9rem;}
+.sc-meta-card span{display:block;font-size:.72rem;color:var(--muted);margin-bottom:.22rem;}
+.sc-meta-card strong{display:block;font-size:.85rem;line-height:1.45;color:var(--text);}
+.sc-btn-row{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem;}
+.sc-btn-row .btn{min-width:160px;}
+.sc-saved{display:none;background:rgba(0,229,160,.07);border:1px solid rgba(0,229,160,.22);border-radius:16px;padding:1rem 1.1rem;text-align:center;margin-bottom:1rem;}
+.sc-saved.show{display:block;}
+.sc-saved h4{font-size:1rem;margin-bottom:.25rem;}
+.sc-saved p{font-size:.84rem;color:var(--muted);line-height:1.6;}
+.sc-help{display:grid;gap:.8rem;}
+.sc-help-card{background:rgba(108,99,255,.06);border:1px solid rgba(108,99,255,.18);border-radius:16px;padding:1rem;}
+.sc-help-card h4{color:var(--accent3);font-size:.9rem;font-weight:700;margin-bottom:.5rem;}
+.sc-help-card p{font-size:.8rem;color:var(--muted);line-height:1.65;margin-bottom:.35rem;}
+.sc-help-card p:last-child{margin-bottom:0;}
+#debug-info{display:none;margin-top:1rem;font-size:.72rem;color:var(--muted);text-align:left;background:var(--surface);border-radius:10px;padding:.8rem;}
+@media(max-width:620px){
+  .sc-hero h2{font-size:1.7rem;}
+  .sc-ring{width:200px;height:200px;}
+  .sc-num{font-size:2.55rem;}
+  .sc-stats{grid-template-columns:repeat(2,1fr);}
+  .sc-meta{grid-template-columns:1fr;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sc-wrap anim">
+  <div class="sc-hero">
+    <div class="sc-kicker">Hybrid walking tracker</div>
+    <h2>Motion + GPS step counter</h2>
+    <p>Uses motion rhythm first and GPS as a filter to avoid counting random phone shakes. Auto mode syncs by itself, while manual mode waits for your final save.</p>
+  </div>
+
+  <div class="sc-panel secure-box" id="secure-box" style="display:none;">
+    <h4>Secure connection required</h4>
+    <p id="secure-msg">Phone motion sensors only work on pages the browser treats as secure.</p>
+    <a id="secure-link" class="btn btn-warning" href="#" style="margin-top:.75rem;text-decoration:none;">Open secure link</a>
+  </div>
+
+  <div class="sc-panel perm-box" id="perm-box">
+    <h4>Motion permission required</h4>
+    <p>Your browser needs access to motion sensors before step detection can start.</p>
+    <button class="btn btn-warning btn-full" onclick="requestIOSPermission()" style="margin-top:.75rem;">Allow motion sensor access</button>
+  </div>
+
+  <div class="sc-panel limit-box">
+    <h4>Important browser limit</h4>
+    <p>This web version can auto-sync while the page stays active, but mobile browsers do not keep motion sensors running after the browser is fully closed or the phone suspends the page. For true all-day background tracking you still need Fitbit, Apple Health, Google Fit, or a native app build.</p>
+  </div>
+
+  <div class="sc-panel sc-options">
+    <div class="sc-option-row">
+      <div>
+        <div class="sc-label">Save mode</div>
+        <div style="font-size:.83rem;color:var(--muted);margin-top:.2rem;">Choose whether the app saves by itself or waits for your review.</div>
+      </div>
+      <div class="sc-toggle">
+        <button id="mode-auto" class="sc-toggle-btn" onclick="setSaveMode('auto')">Auto save</button>
+        <button id="mode-manual" class="sc-toggle-btn manual" onclick="setSaveMode('manual')">Manual save</button>
+      </div>
+    </div>
+
+    <div class="sc-switch-list">
+      <label class="sc-switch">
+        <div class="sc-switch-copy">
+          <strong>GPS assist</strong>
+          <span>Uses location movement to reduce shake-only counts when the phone is still.</span>
+        </div>
+        <input id="gps-toggle" type="checkbox" checked onchange="toggleGpsAssist(this.checked)"/>
+      </label>
+
+      <label class="sc-switch">
+        <div class="sc-switch-copy">
+          <strong>Keep screen awake</strong>
+          <span>Requests a wake lock on supported browsers so the page is less likely to pause while walking.</span>
+        </div>
+        <input id="wake-toggle" type="checkbox" checked onchange="toggleWakeLockOption(this.checked)"/>
+      </label>
+    </div>
+  </div>
+
+  <div class="sc-status-row">
+    <div class="sc-status idle" id="sc-status">Ready to walk</div>
+    <div class="sc-chip" id="motion-chip">Motion standby</div>
+    <div class="sc-chip" id="gps-chip">GPS assist on</div>
+  </div>
+
+  <div class="sc-ring" id="sc-ring" style="background:conic-gradient(var(--accent) 0deg,rgba(0,229,160,.07) 0deg);">
+    <div class="sc-inner">
+      <div class="sc-num" id="sc-num">0</div>
+      <div class="sc-lbl">steps</div>
+      <div class="sc-sub" id="sc-sync">Sync idle</div>
+    </div>
+  </div>
+
+  <div class="sc-stats">
+    <div class="sc-stat"><div class="sc-stat-val" id="sc-km">0.00</div><div class="sc-stat-lbl">km</div></div>
+    <div class="sc-stat"><div class="sc-stat-val" id="sc-cal">--</div><div class="sc-stat-lbl">kcal</div></div>
+    <div class="sc-stat"><div class="sc-stat-val" id="sc-time">00:00</div><div class="sc-stat-lbl">duration</div></div>
+    <div class="sc-stat"><div class="sc-stat-val" id="sc-gps-distance">0 m</div><div class="sc-stat-lbl">gps distance</div></div>
+  </div>
+
+  <div class="sc-meta">
+    <div class="sc-meta-card">
+      <span>Current mode</span>
+      <strong id="sc-mode-label">Auto save</strong>
+    </div>
+    <div class="sc-meta-card">
+      <span>Walking filter</span>
+      <strong id="sc-filter-label">Waiting for walking pattern</strong>
+    </div>
+    <div class="sc-meta-card">
+      <span>Session state</span>
+      <strong id="sc-session-label">Not started</strong>
+    </div>
+  </div>
+
+  <div class="sc-btn-row" id="sc-btns">
+    <button class="btn btn-primary" onclick="startTrackingClick()">Start walking</button>
+  </div>
+
+  <div class="sc-saved" id="sc-saved">
+    <h4 id="sc-saved-title">Session saved</h4>
+    <p id="sc-saved-msg"></p>
+  </div>
+
+  <div class="sc-help">
+    <div class="sc-help-card">
+      <h4>How this version works</h4>
+      <p>1. Start walking and allow motion plus location if the phone asks.</p>
+      <p>2. The app waits for a real walking rhythm before counting, so random shakes are less likely to become steps.</p>
+      <p>3. Auto save updates the server during the session. Manual save keeps the count on the page until you confirm it.</p>
+    </div>
+
+    <div class="sc-help-card">
+      <h4>Best results</h4>
+      <p>Keep the phone in a pocket or steady hand while walking.</p>
+      <p>Leave GPS assist on when possible. Indoors, GPS may be weak, so the tracker falls back to motion rhythm.</p>
+      <p>Tap the status pill to open debug details if you want to inspect sensor behavior.</p>
+    </div>
+  </div>
+
+  <div id="debug-info"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TRACKER_KEY = 'stepup-hybrid-tracker-v2';
+const AUTO_SYNC_MIN_STEPS = 12;
+const AUTO_SYNC_INTERVAL_MS = 45000;
+const PEAK_COOLDOWN_MS = 280;
+const WALK_RESET_MS = 2500;
+const PENDING_WINDOW_MS = 4200;
+const MIN_THRESHOLD = 1.1;
+const MAX_THRESHOLD = 4.4;
+const MAX_SPIKE = 7.5;
+
+const tracker = {
+  count: 0,
+  active: false,
+  startedAt: null,
+  saveMode: 'auto',
+  gpsAssist: true,
+  keepScreenAwake: true,
+  manualPendingSave: false,
+  restoredActiveSession: false,
+  sessionId: '',
+  userWeight: null,
+  timerId: null,
+  motionListenerAttached: false,
+  motionEventCount: 0,
+  peakReady: true,
+  lastPeakAt: 0,
+  baseline: 9.8,
+  filteredBuffer: [],
+  candidateBuffer: [],
+  lastCandidateAt: 0,
+  walkingActive: false,
+  syncBusy: false,
+  lastSyncAt: 0,
+  lastSyncedSteps: 0,
+  syncLabel: 'Sync idle',
+  gpsWatchId: null,
+  gpsAvailable: false,
+  gpsPermissionDenied: false,
+  gpsDistanceM: 0,
+  gpsWindowDistanceM: 0,
+  gpsSpeedMps: 0,
+  gpsLastFixAt: 0,
+  gpsSamples: [],
+  lastLocation: null,
+  wakeLock: null,
+  debugLines: [],
+};
+
+function el(id){
+  return document.getElementById(id);
+}
+
+function dbg(msg){
+  tracker.debugLines.push(new Date().toLocaleTimeString() + ' | ' + msg);
+  if(tracker.debugLines.length > 20){
+    tracker.debugLines.shift();
+  }
+  el('debug-info').innerHTML = tracker.debugLines.join('<br>');
+}
+
+function toggleDebug(){
+  const node = el('debug-info');
+  node.style.display = node.style.display === 'block' ? 'none' : 'block';
+}
+
+el('sc-status').addEventListener('click', toggleDebug);
+
+function isLocalSecureException(){
+  return ['localhost', '127.0.0.1', '::1', '[::1]'].includes(location.hostname);
+}
+
+function getSecureContextIssue(){
+  if(window.isSecureContext || isLocalSecureException()){
+    return null;
+  }
+  if(location.protocol !== 'https:'){
+    return {
+      type: 'http',
+      message: 'This page is open on plain HTTP. Phone motion sensors are blocked there. Open the HTTPS link instead.',
+      url: location.href.replace(/^http:/, 'https:')
+    };
+  }
+  return {
+    type: 'untrusted',
+    message: 'This HTTPS page is not trusted by the browser yet. Use a trusted certificate or trusted reverse proxy.',
+    url: location.href
+  };
+}
+
+function renderSecureWarning(){
+  const issue = getSecureContextIssue();
+  const box = el('secure-box');
+  if(!issue){
+    box.style.display = 'none';
+    return;
+  }
+  el('secure-msg').textContent = issue.message;
+  el('secure-link').href = issue.url;
+  el('secure-link').textContent = issue.type === 'http' ? 'Open HTTPS link' : 'Reload secure page';
+  box.style.display = 'block';
+}
+
+function requiresMotionPermissionGesture(){
+  return typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function';
+}
+
+async function requestIOSPermission(){
+  try{
+    await ensureMotionPermission();
+    showToast('Motion permission granted', 'success');
+  }catch(err){
+    showToast(err.message || 'Motion permission denied', 'error');
+  }
+}
+
+async function ensureMotionPermission(){
+  if(typeof DeviceMotionEvent === 'undefined'){
+    throw new Error('Motion sensor is not supported on this device/browser');
+  }
+  if(typeof DeviceMotionEvent.requestPermission !== 'function'){
+    return true;
+  }
+  const result = await DeviceMotionEvent.requestPermission();
+  if(result !== 'granted'){
+    throw new Error('Motion permission denied');
+  }
+  el('perm-box').style.display = 'none';
+  dbg('Motion permission granted');
+  return true;
+}
+
+function getLocalDateString(){
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + d;
+}
+
+function createSessionId(){
+  return 'walk-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+function getCalories(){
+  if(!tracker.userWeight){
+    return null;
+  }
+  const rate = tracker.userWeight < 60 ? 0.04 : tracker.userWeight <= 85 ? 0.05 : 0.06;
+  return Math.round(tracker.count * rate);
+}
+
+function formatDuration(){
+  if(!tracker.startedAt){
+    return '00:00';
+  }
+  const totalSeconds = Math.max(0, Math.floor((Date.now() - tracker.startedAt) / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+}
+
+function formatDistanceMeters(meters){
+  if(meters >= 1000){
+    return (meters / 1000).toFixed(2) + ' km';
+  }
+  return Math.round(meters) + ' m';
+}
+
+function setStatus(kind, message){
+  const node = el('sc-status');
+  node.className = 'sc-status ' + kind;
+  node.textContent = message;
+}
+
+function setChip(id, text, tone){
+  const node = el(id);
+  node.className = 'sc-chip' + (tone ? ' ' + tone : '');
+  node.textContent = text;
+}
+
+function setFilterLabel(text){
+  el('sc-filter-label').textContent = text;
+}
+
+function setSessionLabel(text){
+  el('sc-session-label').textContent = text;
+}
+
+function setSyncLabel(text){
+  tracker.syncLabel = text;
+  el('sc-sync').textContent = text;
+}
+
+function hideSavedBox(){
+  el('sc-saved').classList.remove('show');
+}
+
+function showSavedBox(title, detail){
+  el('sc-saved-title').textContent = title;
+  el('sc-saved-msg').textContent = detail;
+  el('sc-saved').classList.add('show');
+}
+
+function updateModeUI(){
+  const autoBtn = el('mode-auto');
+  const manualBtn = el('mode-manual');
+  autoBtn.classList.toggle('active', tracker.saveMode === 'auto');
+  manualBtn.classList.toggle('active', tracker.saveMode === 'manual');
+  el('gps-toggle').checked = tracker.gpsAssist;
+  el('wake-toggle').checked = tracker.keepScreenAwake;
+  el('sc-mode-label').textContent = tracker.saveMode === 'auto' ? 'Auto save' : 'Manual save';
+}
+
+function updateDisplay(){
+  el('sc-num').textContent = tracker.count.toLocaleString();
+  el('sc-km').textContent = (tracker.count / 1300).toFixed(2);
+  el('sc-cal').textContent = getCalories() == null ? '--' : String(getCalories());
+  el('sc-time').textContent = formatDuration();
+  el('sc-gps-distance').textContent = formatDistanceMeters(tracker.gpsDistanceM);
+  const pct = Math.min(tracker.count / 10000, 1);
+  const deg = Math.round(pct * 360);
+  el('sc-ring').style.background = 'conic-gradient(var(--accent) ' + deg + 'deg, rgba(0,229,160,.07) ' + deg + 'deg)';
+  el('sc-sync').textContent = tracker.syncLabel;
+}
+
+function persistState(){
+  const payload = {
+    count: tracker.count,
+    startedAt: tracker.startedAt,
+    saveMode: tracker.saveMode,
+    gpsAssist: tracker.gpsAssist,
+    keepScreenAwake: tracker.keepScreenAwake,
+    manualPendingSave: tracker.manualPendingSave,
+    active: tracker.active,
+    restoredActiveSession: tracker.restoredActiveSession,
+    sessionId: tracker.sessionId,
+    lastSyncAt: tracker.lastSyncAt,
+    lastSyncedSteps: tracker.lastSyncedSteps,
+    gpsDistanceM: tracker.gpsDistanceM,
+    gpsWindowDistanceM: tracker.gpsWindowDistanceM,
+    gpsSpeedMps: tracker.gpsSpeedMps,
+    gpsLastFixAt: tracker.gpsLastFixAt,
+  };
+  localStorage.setItem(TRACKER_KEY, JSON.stringify(payload));
+}
+
+function clearPersistedState(){
+  localStorage.removeItem(TRACKER_KEY);
+}
+
+function resetDetectionState(){
+  tracker.motionEventCount = 0;
+  tracker.peakReady = true;
+  tracker.lastPeakAt = 0;
+  tracker.baseline = 9.8;
+  tracker.filteredBuffer = [];
+  tracker.candidateBuffer = [];
+  tracker.lastCandidateAt = 0;
+  tracker.walkingActive = false;
+}
+
+function resetGpsState(){
+  tracker.gpsAvailable = false;
+  tracker.gpsPermissionDenied = false;
+  tracker.gpsDistanceM = 0;
+  tracker.gpsWindowDistanceM = 0;
+  tracker.gpsSpeedMps = 0;
+  tracker.gpsLastFixAt = 0;
+  tracker.gpsSamples = [];
+  tracker.lastLocation = null;
+}
+
+function hydrateState(){
+  renderSecureWarning();
+  updateModeUI();
+  updateDisplay();
+
+  const raw = localStorage.getItem(TRACKER_KEY);
+  if(!raw){
+    setStatus('idle', 'Ready to walk');
+    setFilterLabel('Waiting for walking pattern');
+    setSessionLabel('Not started');
+    renderButtons();
+    refreshGpsChip();
+    return;
+  }
+
+  try{
+    const saved = JSON.parse(raw);
+    tracker.count = Number(saved.count) || 0;
+    tracker.startedAt = saved.startedAt || null;
+    tracker.saveMode = saved.saveMode === 'manual' ? 'manual' : 'auto';
+    tracker.gpsAssist = saved.gpsAssist !== false;
+    tracker.keepScreenAwake = saved.keepScreenAwake !== false;
+    tracker.manualPendingSave = Boolean(saved.manualPendingSave);
+    tracker.restoredActiveSession = Boolean(saved.active || saved.restoredActiveSession);
+    tracker.sessionId = saved.sessionId || '';
+    tracker.lastSyncAt = Number(saved.lastSyncAt) || 0;
+    tracker.lastSyncedSteps = Number(saved.lastSyncedSteps) || 0;
+    tracker.gpsDistanceM = Number(saved.gpsDistanceM) || 0;
+    tracker.gpsWindowDistanceM = Number(saved.gpsWindowDistanceM) || 0;
+    tracker.gpsSpeedMps = Number(saved.gpsSpeedMps) || 0;
+    tracker.gpsLastFixAt = Number(saved.gpsLastFixAt) || 0;
+  }catch(err){
+    clearPersistedState();
+    dbg('Could not restore saved state: ' + err.message);
+  }
+
+  updateModeUI();
+  updateDisplay();
+
+  if(tracker.manualPendingSave && tracker.count > 0){
+    setStatus('stopped', 'Session stopped - save when ready');
+    setFilterLabel('Manual save pending');
+    setSessionLabel('Unsaved session restored');
+    setSyncLabel('Waiting for manual save');
+  }else if(tracker.restoredActiveSession){
+    setStatus('waiting', 'Session restored - reconnect sensors');
+    setFilterLabel('Resume to continue tracking');
+    setSessionLabel('Recovered from local storage');
+    setSyncLabel(tracker.saveMode === 'auto' ? 'Ready to resume auto sync' : 'Ready to resume');
+  }else if(tracker.count > 0){
+    setStatus('stopped', 'Last session loaded');
+    setFilterLabel('Ready for a new walk');
+    setSessionLabel('Stopped');
+  }else{
+    setStatus('idle', 'Ready to walk');
+    setFilterLabel('Waiting for walking pattern');
+    setSessionLabel('Not started');
+  }
+
+  renderButtons();
+  refreshGpsChip();
+
+  if(tracker.restoredActiveSession && !requiresMotionPermissionGesture()){
+    setTimeout(() => {
+      startTracking({resume: true, silent: true});
+    }, 150);
+  }
+}
+
+function renderButtons(){
+  const wrap = el('sc-btns');
+  if(tracker.active){
+    wrap.innerHTML = [
+      '<button class="btn btn-danger" onclick="stopTrackingClick()">Stop</button>',
+      '<button class="btn btn-ghost" onclick="resetTrackingClick()">Reset</button>'
+    ].join('');
+    return;
+  }
+
+  if(tracker.manualPendingSave && tracker.count > 0){
+    wrap.innerHTML = [
+      '<button class="btn btn-purple" onclick="saveManualSession()">Save ' + tracker.count.toLocaleString() + ' steps</button>',
+      '<button class="btn btn-primary" onclick="resumeTracking()">Resume</button>',
+      '<button class="btn btn-ghost" onclick="resetTrackingClick()">Discard</button>'
+    ].join('');
+    return;
+  }
+
+  if(tracker.restoredActiveSession){
+    wrap.innerHTML = [
+      '<button class="btn btn-primary" onclick="resumeTracking()">Resume session</button>',
+      '<button class="btn btn-warning" onclick="stopTrackingClick()">End session now</button>',
+      '<button class="btn btn-ghost" onclick="resetTrackingClick()">Discard</button>'
+    ].join('');
+    return;
+  }
+
+  if(tracker.count > 0){
+    wrap.innerHTML = [
+      '<button class="btn btn-primary" onclick="startTrackingClick()">Start new walk</button>',
+      '<button class="btn btn-ghost" onclick="resetTrackingClick()">Reset</button>'
+    ].join('');
+    return;
+  }
+
+  wrap.innerHTML = '<button class="btn btn-primary" onclick="startTrackingClick()">Start walking</button>';
+}
+
+function setSaveMode(mode){
+  if(tracker.active){
+    showToast('Stop the current session before changing save mode', 'info');
+    return;
+  }
+  if(mode !== 'auto' && mode !== 'manual'){
+    return;
+  }
+  tracker.saveMode = mode;
+  updateModeUI();
+  setSyncLabel(mode === 'auto' ? 'Auto sync ready' : 'Manual save mode');
+  persistState();
+  renderButtons();
+}
+
+function toggleGpsAssist(enabled){
+  tracker.gpsAssist = Boolean(enabled);
+  if(tracker.active){
+    if(tracker.gpsAssist){
+      startGpsWatch();
+    }else{
+      stopGpsWatch();
+    }
+  }
+  refreshGpsChip();
+  persistState();
+}
+
+function toggleWakeLockOption(enabled){
+  tracker.keepScreenAwake = Boolean(enabled);
+  if(!tracker.keepScreenAwake){
+    releaseWakeLock();
+  }else if(tracker.active){
+    requestWakeLock();
+  }
+  persistState();
+}
+
+async function requestWakeLock(){
+  if(!tracker.keepScreenAwake || !('wakeLock' in navigator)){
+    return;
+  }
+  try{
+    if(tracker.wakeLock){
+      return;
+    }
+    tracker.wakeLock = await navigator.wakeLock.request('screen');
+    tracker.wakeLock.addEventListener('release', () => {
+      tracker.wakeLock = null;
+      dbg('Wake lock released');
+    });
+    dbg('Wake lock acquired');
+  }catch(err){
+    dbg('Wake lock failed: ' + err.message);
+  }
+}
+
+function releaseWakeLock(){
+  if(tracker.wakeLock){
+    tracker.wakeLock.release().catch(() => {});
+    tracker.wakeLock = null;
+  }
+}
+
+function refreshMotionChip(){
+  if(tracker.active && tracker.motionEventCount > 0){
+    setChip('motion-chip', 'Motion live', 'good');
+    return;
+  }
+  if(tracker.active){
+    setChip('motion-chip', 'Waiting for motion', 'warn');
+    return;
+  }
+  if(tracker.restoredActiveSession){
+    setChip('motion-chip', 'Resume required', 'warn');
+    return;
+  }
+  setChip('motion-chip', 'Motion standby', '');
+}
+
+function getGpsMotionState(){
+  if(!tracker.gpsAssist){
+    return 'disabled';
+  }
+  if(tracker.gpsPermissionDenied){
+    return 'blocked';
+  }
+  if(!tracker.gpsAvailable){
+    return tracker.active ? 'searching' : 'idle';
+  }
+  const fresh = Date.now() - tracker.gpsLastFixAt < 20000;
+  if(!fresh){
+    return 'stale';
+  }
+  if(tracker.gpsSpeedMps > 6){
+    return 'vehicle';
+  }
+  if(tracker.gpsWindowDistanceM >= 3 || tracker.gpsSpeedMps >= 0.35){
+    return 'moving';
+  }
+  if(tracker.gpsWindowDistanceM < 1.2 && tracker.gpsSpeedMps >= 0 && tracker.gpsSpeedMps < 0.15){
+    return 'still';
+  }
+  return 'uncertain';
+}
+
+function refreshGpsChip(){
+  const state = getGpsMotionState();
+  if(state === 'disabled'){
+    setChip('gps-chip', 'GPS assist off', '');
+    return;
+  }
+  if(state === 'blocked'){
+    setChip('gps-chip', 'GPS permission blocked', 'bad');
+    return;
+  }
+  if(state === 'searching'){
+    setChip('gps-chip', 'GPS locating', 'warn');
+    return;
+  }
+  if(state === 'stale'){
+    setChip('gps-chip', 'GPS stale', 'warn');
+    return;
+  }
+  if(state === 'moving'){
+    setChip('gps-chip', 'GPS movement confirmed', 'good');
+    return;
+  }
+  if(state === 'still'){
+    setChip('gps-chip', 'GPS says mostly still', 'info');
+    return;
+  }
+  if(state === 'vehicle'){
+    setChip('gps-chip', 'High speed detected', 'bad');
+    return;
+  }
+  if(state === 'uncertain'){
+    setChip('gps-chip', 'GPS uncertain', 'info');
+    return;
+  }
+  setChip('gps-chip', 'GPS assist on', '');
+}
+
+function attachMotionListener(){
+  if(tracker.motionListenerAttached){
+    return;
+  }
+  window.addEventListener('devicemotion', handleMotion, true);
+  tracker.motionListenerAttached = true;
+  dbg('Motion listener attached');
+}
+
+function detachMotionListener(){
+  if(!tracker.motionListenerAttached){
+    return;
+  }
+  window.removeEventListener('devicemotion', handleMotion, true);
+  tracker.motionListenerAttached = false;
+  dbg('Motion listener removed');
+}
+
+function distanceMeters(aLat, aLng, bLat, bLng){
+  const toRad = Math.PI / 180;
+  const dLat = (bLat - aLat) * toRad;
+  const dLng = (bLng - aLng) * toRad;
+  const lat1 = aLat * toRad;
+  const lat2 = bLat * toRad;
+  const sinDLat = Math.sin(dLat / 2);
+  const sinDLng = Math.sin(dLng / 2);
+  const a = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLng * sinDLng;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function computeWindowDistance(points){
+  if(points.length < 2){
+    return 0;
+  }
+  let total = 0;
+  for(let i = 1; i < points.length; i += 1){
+    const prev = points[i - 1];
+    const curr = points[i];
+    let dist = distanceMeters(prev.lat, prev.lng, curr.lat, curr.lng);
+    const driftGuard = Math.max(1.5, Math.min(8, ((prev.accuracy || 0) + (curr.accuracy || 0)) * 0.2));
+    if(dist < driftGuard){
+      dist = 0;
+    }
+    total += dist;
+  }
+  return total;
+}
+
+function handleGpsSuccess(position){
+  const coords = position.coords || {};
+  const lat = Number(coords.latitude);
+  const lng = Number(coords.longitude);
+  if(!Number.isFinite(lat) || !Number.isFinite(lng)){
+    return;
+  }
+
+  const ts = position.timestamp || Date.now();
+  const accuracy = Number(coords.accuracy) || 0;
+  const current = {lat, lng, ts, accuracy};
+
+  if(tracker.lastLocation){
+    let dist = distanceMeters(tracker.lastLocation.lat, tracker.lastLocation.lng, lat, lng);
+    const driftGuard = Math.max(1.5, Math.min(8, accuracy * 0.3 || 2));
+    if(dist < driftGuard){
+      dist = 0;
+    }
+    tracker.gpsDistanceM += dist;
+    const dt = Math.max((ts - tracker.lastLocation.ts) / 1000, 1);
+    const derivedSpeed = dist / dt;
+    tracker.gpsSpeedMps = Number.isFinite(coords.speed) && coords.speed >= 0 ? coords.speed : derivedSpeed;
+  }else{
+    tracker.gpsSpeedMps = Number.isFinite(coords.speed) && coords.speed >= 0 ? coords.speed : 0;
+  }
+
+  tracker.lastLocation = current;
+  tracker.gpsAvailable = true;
+  tracker.gpsLastFixAt = Date.now();
+  tracker.gpsSamples.push(current);
+  tracker.gpsSamples = tracker.gpsSamples.filter(point => ts - point.ts <= 25000);
+  tracker.gpsWindowDistanceM = computeWindowDistance(tracker.gpsSamples);
+  refreshGpsChip();
+  updateDisplay();
+  persistState();
+}
+
+function handleGpsError(error){
+  if(error && error.code === 1){
+    tracker.gpsPermissionDenied = true;
+    dbg('GPS permission denied');
+  }else if(error){
+    dbg('GPS error: ' + error.message);
+  }
+  refreshGpsChip();
+}
+
+function startGpsWatch(){
+  stopGpsWatch();
+  if(!tracker.gpsAssist){
+    refreshGpsChip();
+    return;
+  }
+  if(!('geolocation' in navigator)){
+    setChip('gps-chip', 'GPS not supported', 'bad');
+    return;
+  }
+  refreshGpsChip();
+  tracker.gpsWatchId = navigator.geolocation.watchPosition(
+    handleGpsSuccess,
+    handleGpsError,
+    {enableHighAccuracy: true, maximumAge: 5000, timeout: 15000}
+  );
+}
+
+function stopGpsWatch(){
+  if(tracker.gpsWatchId != null && 'geolocation' in navigator){
+    navigator.geolocation.clearWatch(tracker.gpsWatchId);
+  }
+  tracker.gpsWatchId = null;
+  refreshGpsChip();
+}
+
+function cadenceLooksHuman(candidates){
+  if(candidates.length < 3){
+    return false;
+  }
+  const intervals = [];
+  for(let i = 1; i < candidates.length; i += 1){
+    intervals.push(candidates[i].ts - candidates[i - 1].ts);
+  }
+  if(!intervals.length){
+    return false;
+  }
+  const valid = intervals.every(ms => ms >= 300 && ms <= 1400);
+  if(!valid){
+    return false;
+  }
+  const avg = intervals.reduce((sum, ms) => sum + ms, 0) / intervals.length;
+  const variance = intervals.reduce((sum, ms) => sum + Math.pow(ms - avg, 2), 0) / intervals.length;
+  return avg >= 320 && avg <= 1050 && variance < 90000;
+}
+
+function addSteps(amount, reason){
+  if(amount <= 0){
+    return;
+  }
+  const next = Math.min(100000, tracker.count + amount);
+  const added = next - tracker.count;
+  if(added <= 0){
+    return;
+  }
+  tracker.count = next;
+  updateDisplay();
+  persistState();
+  dbg('Added ' + added + ' step(s) from ' + reason + '. Total=' + tracker.count);
+  if(tracker.saveMode === 'auto'){
+    syncLiveSession({status: 'running'}).catch(() => {});
+  }
+}
+
+function handlePeak(timestamp, amplitude, threshold){
+  if(timestamp - tracker.lastCandidateAt > WALK_RESET_MS){
+    tracker.walkingActive = false;
+    tracker.candidateBuffer = [];
+  }
+  tracker.lastCandidateAt = timestamp;
+
+  const gpsState = getGpsMotionState();
+  if(gpsState === 'vehicle'){
+    tracker.walkingActive = false;
+    tracker.candidateBuffer = [];
+    setFilterLabel('Ignoring high-speed movement');
+    return;
+  }
+
+  if(tracker.walkingActive){
+    if(gpsState === 'still' && amplitude < threshold * 1.15){
+      tracker.walkingActive = false;
+      tracker.candidateBuffer = [{ts: timestamp, amp: amplitude}];
+      setFilterLabel('GPS says still - waiting for stronger walking pattern');
+      return;
+    }
+    setFilterLabel(gpsState === 'moving' ? 'Walking pattern confirmed by GPS' : 'Walking pattern confirmed by motion');
+    addSteps(1, 'steady cadence');
+    return;
+  }
+
+  tracker.candidateBuffer.push({ts: timestamp, amp: amplitude});
+  tracker.candidateBuffer = tracker.candidateBuffer.filter(item => timestamp - item.ts <= PENDING_WINDOW_MS);
+
+  const needed = gpsState === 'still' ? 4 : 3;
+  if(tracker.candidateBuffer.length >= needed && cadenceLooksHuman(tracker.candidateBuffer)){
+    const burstCount = tracker.candidateBuffer.length;
+    tracker.candidateBuffer = [];
+    tracker.walkingActive = true;
+    setFilterLabel(gpsState === 'moving' ? 'Walking burst accepted with GPS help' : 'Walking burst accepted by cadence');
+    addSteps(burstCount, 'walking burst');
+  }else{
+    setFilterLabel('Waiting for stable walking rhythm');
+  }
+}
+
+function handleMotion(event){
+  if(!tracker.active){
+    return;
+  }
+
+  const acc = event.accelerationIncludingGravity || event.acceleration;
+  if(!acc){
+    return;
+  }
+
+  const x = Number(acc.x) || 0;
+  const y = Number(acc.y) || 0;
+  const z = Number(acc.z) || 0;
+  const mag = Math.sqrt(x * x + y * y + z * z);
+  if(!Number.isFinite(mag) || mag <= 0){
+    return;
+  }
+
+  tracker.motionEventCount += 1;
+  refreshMotionChip();
+
+  tracker.baseline = tracker.baseline * 0.92 + mag * 0.08;
+  const filtered = mag - tracker.baseline;
+  const absFiltered = Math.abs(filtered);
+
+  if(absFiltered > MAX_SPIKE){
+    tracker.walkingActive = false;
+    tracker.candidateBuffer = [];
+    setFilterLabel('Large spike ignored as non-walking motion');
+    return;
+  }
+
+  tracker.filteredBuffer.push(absFiltered);
+  if(tracker.filteredBuffer.length > 24){
+    tracker.filteredBuffer.shift();
+  }
+
+  const avgAbs = tracker.filteredBuffer.reduce((sum, value) => sum + value, 0) / tracker.filteredBuffer.length;
+  const threshold = Math.max(MIN_THRESHOLD, Math.min(MAX_THRESHOLD, avgAbs * 1.55 + 0.35));
+  const now = Date.now();
+
+  if(filtered > threshold && tracker.peakReady && now - tracker.lastPeakAt > PEAK_COOLDOWN_MS){
+    tracker.peakReady = false;
+    tracker.lastPeakAt = now;
+    handlePeak(now, absFiltered, threshold);
+  }
+
+  if(filtered < threshold * 0.35){
+    tracker.peakReady = true;
+  }
+}
+
+async function syncLiveSession(options = {}){
+  const status = options.status || 'running';
+  const force = Boolean(options.force);
+  const silent = Boolean(options.silent);
+  const keepalive = Boolean(options.keepalive);
+
+  if(tracker.saveMode !== 'auto' || !tracker.sessionId){
+    return false;
+  }
+  if(tracker.count <= 0 && !force){
+    return false;
+  }
+
+  const sinceLastSync = Date.now() - tracker.lastSyncAt;
+  const delta = tracker.count - tracker.lastSyncedSteps;
+  if(!force && delta < AUTO_SYNC_MIN_STEPS && sinceLastSync < AUTO_SYNC_INTERVAL_MS){
+    return false;
+  }
+
+  const payload = {
+    session_id: tracker.sessionId,
+    steps: tracker.count,
+    date: getLocalDateString(),
+    mode: tracker.saveMode,
+    status
+  };
+
+  if(keepalive && navigator.sendBeacon){
+    try{
+      const blob = new Blob([JSON.stringify(payload)], {type: 'application/json'});
+      const sent = navigator.sendBeacon('/api/live-step-session', blob);
+      if(sent){
+        tracker.lastSyncedSteps = tracker.count;
+        tracker.lastSyncAt = Date.now();
+        setSyncLabel(status === 'stopped' ? 'Final sync sent' : 'Live sync sent');
+        persistState();
+        return true;
+      }
+    }catch(err){
+      dbg('Beacon sync failed: ' + err.message);
+    }
+  }
+
+  if(tracker.syncBusy){
+    return false;
+  }
+
+  tracker.syncBusy = true;
+  setSyncLabel(status === 'stopped' ? 'Final sync...' : 'Syncing...');
+  updateDisplay();
+
+  try{
+    const response = await fetch('/api/live-step-session', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+      keepalive
+    });
+    const data = await response.json();
+    if(!response.ok || !data.success){
+      throw new Error(data.message || 'Could not sync session');
+    }
+    tracker.lastSyncedSteps = tracker.count;
+    tracker.lastSyncAt = Date.now();
+    setSyncLabel(status === 'stopped' ? 'Auto-saved' : 'Live sync on');
+    persistState();
+    return true;
+  }catch(err){
+    setSyncLabel('Sync retry pending');
+    if(!silent){
+      dbg('Live sync failed: ' + err.message);
+    }
+    return false;
+  }finally{
+    tracker.syncBusy = false;
+    updateDisplay();
+  }
+}
+
+async function loadWeight(){
+  try{
+    const response = await fetch('/api/profile');
+    const data = await response.json();
+    tracker.userWeight = data.weight_kg || null;
+  }catch(err){
+    dbg('Could not load weight: ' + err.message);
+  }
+  updateDisplay();
+}
+
+function startTimer(){
+  if(tracker.timerId){
+    clearInterval(tracker.timerId);
+  }
+  tracker.timerId = setInterval(() => {
+    updateDisplay();
+    if(tracker.active && tracker.motionEventCount === 0 && tracker.startedAt && Date.now() - tracker.startedAt > 2500){
+      setStatus('waiting', 'Waiting for sensor data');
+      refreshMotionChip();
+    }
+    if(tracker.active && !tracker.walkingActive && tracker.lastCandidateAt && Date.now() - tracker.lastCandidateAt > WALK_RESET_MS){
+      tracker.candidateBuffer = [];
+      setFilterLabel('Waiting for stable walking rhythm');
+    }
+  }, 500);
+}
+
+function stopTimer(){
+  if(tracker.timerId){
+    clearInterval(tracker.timerId);
+    tracker.timerId = null;
+  }
+}
+
+async function startTracking(options = {}){
+  const resume = Boolean(options.resume);
+  const silent = Boolean(options.silent);
+  if(tracker.active){
+    return true;
+  }
+
+  const secureIssue = getSecureContextIssue();
+  if(secureIssue){
+    renderSecureWarning();
+    if(!silent){
+      showToast('Open the HTTPS page to use motion tracking on mobile.', 'error');
+    }
+    return false;
+  }
+
+  try{
+    await ensureMotionPermission();
+  }catch(err){
+    if(!silent){
+      showToast(err.message || 'Motion permission is required', 'error');
+    }
+    return false;
+  }
+
+  hideSavedBox();
+  resetDetectionState();
+
+  if(!resume){
+    tracker.count = 0;
+    tracker.startedAt = Date.now();
+    tracker.manualPendingSave = false;
+    tracker.restoredActiveSession = false;
+    tracker.sessionId = createSessionId();
+    tracker.lastSyncAt = 0;
+    tracker.lastSyncedSteps = 0;
+    resetGpsState();
+    setSyncLabel(tracker.saveMode === 'auto' ? 'Auto sync ready' : 'Manual save mode');
+  }else{
+    tracker.startedAt = tracker.startedAt || Date.now();
+    tracker.manualPendingSave = false;
+    tracker.restoredActiveSession = false;
+    tracker.sessionId = tracker.sessionId || createSessionId();
+    setSyncLabel(tracker.saveMode === 'auto' ? 'Resumed auto sync' : 'Resumed manual session');
+  }
+
+  tracker.active = true;
+  attachMotionListener();
+  startTimer();
+  startGpsWatch();
+  refreshMotionChip();
+  refreshGpsChip();
+  if(tracker.keepScreenAwake){
+    requestWakeLock();
+  }
+
+  setStatus('running', 'Counting steps');
+  setFilterLabel('Waiting for stable walking rhythm');
+  setSessionLabel(tracker.saveMode === 'auto' ? 'Live auto-sync session' : 'Manual review session');
+  updateDisplay();
+  persistState();
+  renderButtons();
+
+  if(!silent){
+    showToast(resume ? 'Session resumed' : 'Tracking started', 'success');
+  }
+  dbg('Tracking started. mode=' + tracker.saveMode + ' gps=' + tracker.gpsAssist);
+  return true;
+}
+
+async function stopTracking(){
+  if(!tracker.active && !tracker.restoredActiveSession && !tracker.manualPendingSave){
+    return;
+  }
+
+  const hadLiveTracking = tracker.active;
+  tracker.active = false;
+  tracker.restoredActiveSession = false;
+  stopTimer();
+  detachMotionListener();
+  stopGpsWatch();
+  releaseWakeLock();
+  refreshMotionChip();
+  refreshGpsChip();
+
+  if(tracker.count <= 0){
+    tracker.manualPendingSave = false;
+    setStatus('stopped', 'Stopped - no steps captured');
+    setFilterLabel('No confirmed walking pattern captured');
+    setSessionLabel('Stopped');
+    setSyncLabel('Nothing to save');
+    renderButtons();
+    persistState();
+    return;
+  }
+
+  if(tracker.saveMode === 'auto'){
+    await syncLiveSession({status: 'stopped', force: true, silent: true});
+    tracker.manualPendingSave = false;
+    setStatus('stopped', 'Stopped - session auto-saved');
+    setFilterLabel('Auto save completed');
+    setSessionLabel('Saved automatically');
+    showSavedBox(
+      'Auto-saved session',
+      tracker.count.toLocaleString() + ' steps, ' + (tracker.count / 1300).toFixed(2) + ' km'
+    );
+  }else{
+    tracker.manualPendingSave = true;
+    setStatus('stopped', 'Stopped - save when ready');
+    setFilterLabel('Manual confirmation required');
+    setSessionLabel('Waiting for manual save');
+    setSyncLabel('Waiting for manual save');
+  }
+
+  renderButtons();
+  updateDisplay();
+  persistState();
+  dbg('Tracking stopped. hadLiveTracking=' + hadLiveTracking + ' total=' + tracker.count);
+}
+
+async function saveManualSession(){
+  if(tracker.count <= 0){
+    showToast('No steps to save', 'error');
+    return;
+  }
+
+  try{
+    const response = await fetch('/api/log-steps', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        steps: tracker.count,
+        date: getLocalDateString(),
+        source: 'auto',
+        note: 'Hybrid manual session'
+      })
+    });
+    const data = await response.json();
+    if(!response.ok || !data.success){
+      throw new Error(data.message || 'Could not save steps');
+    }
+
+    tracker.manualPendingSave = false;
+    setStatus('stopped', 'Saved successfully');
+    setFilterLabel('Manual save completed');
+    setSessionLabel('Saved');
+    setSyncLabel('Saved');
+    showSavedBox(
+      'Session saved',
+      tracker.count.toLocaleString() + ' steps, ' + (tracker.count / 1300).toFixed(2) + ' km'
+    );
+    if(data.milestone){
+      showMilestone(data.milestone);
+    }
+    persistState();
+    renderButtons();
+    showToast('Steps saved', 'success');
+  }catch(err){
+    showToast(err.message || 'Save failed', 'error');
+    dbg('Manual save failed: ' + err.message);
+  }
+}
+
+function resetRuntimeState(){
+  tracker.count = 0;
+  tracker.active = false;
+  tracker.startedAt = null;
+  tracker.manualPendingSave = false;
+  tracker.restoredActiveSession = false;
+  tracker.sessionId = '';
+  tracker.lastSyncAt = 0;
+  tracker.lastSyncedSteps = 0;
+  tracker.syncLabel = 'Sync idle';
+  resetDetectionState();
+  resetGpsState();
+}
+
+function resetTracking(){
+  if((tracker.active || tracker.manualPendingSave || tracker.count > 0 || tracker.restoredActiveSession) && !confirm('Discard the current walking session?')){
+    return;
+  }
+  tracker.active = false;
+  stopTimer();
+  detachMotionListener();
+  stopGpsWatch();
+  releaseWakeLock();
+  resetRuntimeState();
+  clearPersistedState();
+  hideSavedBox();
+  renderSecureWarning();
+  setStatus('idle', 'Ready to walk');
+  setFilterLabel('Waiting for walking pattern');
+  setSessionLabel('Not started');
+  refreshMotionChip();
+  refreshGpsChip();
+  updateModeUI();
+  updateDisplay();
+  renderButtons();
+  persistState();
+  dbg('Tracker reset');
+}
+
+function startTrackingClick(){
+  startTracking().catch(() => {});
+}
+
+function stopTrackingClick(){
+  stopTracking().catch(() => {});
+}
+
+function resetTrackingClick(){
+  resetTracking();
+}
+
+function resumeTracking(){
+  startTracking({resume: true}).catch(() => {});
+}
+
+document.addEventListener('visibilitychange', () => {
+  persistState();
+  if(document.visibilityState === 'visible' && tracker.active && tracker.keepScreenAwake){
+    requestWakeLock();
+  }
+  if(document.visibilityState === 'hidden' && tracker.saveMode === 'auto' && tracker.count > 0){
+    syncLiveSession({status: 'running', force: true, silent: true, keepalive: true}).catch(() => {});
+  }
+});
+
+window.addEventListener('pagehide', () => {
+  persistState();
+  if(tracker.saveMode === 'auto' && tracker.count > 0){
+    syncLiveSession({status: tracker.active ? 'running' : 'stopped', force: true, silent: true, keepalive: true}).catch(() => {});
+  }
+});
+
+(function init(){
+  renderSecureWarning();
+  if(requiresMotionPermissionGesture()){
+    el('perm-box').style.display = 'block';
+    dbg('Motion permission will require user action');
+  }
+  loadWeight();
+  hydrateState();
+  refreshMotionChip();
+  refreshGpsChip();
+  updateDisplay();
+})();
+</script>
+{% endblock %}

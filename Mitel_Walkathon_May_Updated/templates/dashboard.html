@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — StepUp{% endblock %}
+{% block page_title %}My Dashboard{% endblock %}
+
+{% block sidebar_menu %}
+<a href="/dashboard" class="nav-link active">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+</a>
+<a href="/team" class="nav-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>My Team
+</a>
+<a href="/stepcounter" class="nav-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="3" stroke-linecap="round"/></svg>Auto Counter
+</a>
+<a href="/fitbit" class="nav-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Fitbit Sync
+</a>
+{% endblock %}
+
+{% block head %}
+<style>
+/* ── COUNTRY FLAG ── */
+#d-country-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+#d-country-flag img.country-flag-img {
+  width: 22px;
+  height: 15px;
+  border-radius: 3px;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  flex-shrink: 0;
+}
+
+.log-card{background:linear-gradient(135deg,rgba(0,229,160,.06),rgba(0,229,160,.01));border-color:rgba(0,229,160,.2);}
+.step-row{display:flex;gap:.65rem;align-items:flex-end;margin-top:.85rem;}
+.big-input{font-size:1.8rem;font-weight:800;font-family:'Syne',sans-serif;text-align:center;padding:.7rem .5rem;flex:1;letter-spacing:-1px;}
+.date-note-row{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-top:.65rem;}
+.quick-btns{display:flex;gap:.4rem;margin-top:.6rem;flex-wrap:wrap;}
+.quick-btn{padding:.28rem .7rem;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--muted);cursor:pointer;font-size:.78rem;font-weight:700;transition:all .15s;}
+.quick-btn:hover{border-color:var(--accent);color:var(--accent);}
+.preview{font-size:.8rem;color:var(--muted);margin-top:.4rem;min-height:1.2em;}
+.auto-btn{width:100%;margin-top:.65rem;padding:.6rem;background:rgba(108,99,255,.1);border:1px solid rgba(108,99,255,.22);border-radius:9px;color:var(--accent3);font-family:'DM Sans',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.4rem;}
+.auto-btn:hover{background:rgba(108,99,255,.2);}
+.motiv-card{display:flex;gap:.75rem;align-items:center;padding:1rem;border-radius:12px;border:1px solid var(--border);}
+.motiv-card.low{background:rgba(255,71,87,.06);border-color:rgba(255,71,87,.2);}
+.motiv-card.medium{background:rgba(255,176,32,.06);border-color:rgba(255,176,32,.2);}
+.motiv-card.high{background:rgba(0,229,160,.06);border-color:rgba(0,229,160,.2);}
+.motiv-card.champion{background:rgba(255,215,0,.06);border-color:rgba(255,215,0,.3);}
+.badge-item{display:inline-flex;align-items:center;gap:.35rem;padding:.35rem .7rem;border-radius:7px;font-size:.78rem;font-weight:700;background:var(--surface);border:1px solid var(--border);}
+.chart-wrap{height:200px;position:relative;}
+.hist-action-btn{background:none;border:none;cursor:pointer;padding:.25rem .4rem;border-radius:5px;font-size:.85rem;transition:background .15s;}
+.hist-action-btn:hover{background:rgba(255,255,255,.05);}
+.weight-row{display:flex;gap:.5rem;align-items:center;margin-top:.5rem;flex-wrap:wrap;}
+.weight-row input{width:85px;padding:.4rem .6rem;font-size:.85rem;}
+@media(max-width:768px){
+  .step-row{flex-direction:column;align-items:stretch;}
+  .big-input{font-size:1.5rem;}
+  .date-note-row{grid-template-columns:1fr;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="anim">
+  <div style="margin-bottom:1.25rem;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.75rem;">
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800">Hey, <span style="color:var(--accent)" id="d-name">{{ user.name }}</span> 👋</div>
+      <div style="color:var(--muted);font-size:.88rem;margin-top:.2rem;">
+        <span id="d-event">📅 Company Walk-a-Thon</span>
+        <span id="d-country-flag"
+          style="margin-left:.5rem;display:inline-flex;align-items:center;gap:5px;">
+          {% if user and user.country_code %}
+            <img class="country-flag-img"
+                 src="https://flagcdn.com/w40/{{ user.country_code.lower() }}.png"
+                 alt="{{ user.country or user.country_code }}"
+                 title="{{ user.country or user.country_code }}"
+                 style="width:22px;height:15px;border-radius:3px;object-fit:cover;border:1px solid rgba(255,255,255,.12);box-shadow:0 1px 3px rgba(0,0,0,.3);"
+                 onerror="this.style.display='none'"/>
+            <span style="font-size:.88rem;font-weight:600;color:var(--muted)">{{ user.country or '' }}</span>
+          {% elif user and user.country_display %}
+            <span style="font-size:.88rem;font-weight:600;color:var(--muted)">{{ user.country_display }}</span>
+          {% endif %}
+        </span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.65rem;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:.5rem;background:rgba(0,48,135,.15);border:1px solid rgba(0,48,135,.35);border-radius:10px;padding:.4rem .85rem;">
+        <img src="{{ url_for('static', filename='images/logo.png') }}"
+             alt="Mitel Movers"
+             style="height:28px;width:auto;" />
+        <span style="font-size:.75rem;color:#4d9ef7;font-weight:700;letter-spacing:.04em;">MITEL MOVERS</span>
+      </div>
+      <button class="gallery-btn" onclick="openGalleryModal()" style="font-size:.82rem;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="15" height="15"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        📸 Photo Wall
+      </button>
+    </div>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="grid-4" style="margin-bottom:1.25rem">
+    <div class="stat-card"><div class="stat-icon">👟</div><div class="stat-val" id="d-total-steps">—</div><div class="stat-lbl">Total Steps</div></div>
+    <div class="stat-card c-purple"><div class="stat-icon">📏</div><div class="stat-val" id="d-total-km">—</div><div class="stat-lbl">Total km</div></div>
+    <div class="stat-card c-orange"><div class="stat-icon">🔥</div><div class="stat-val" id="d-total-cal">—</div><div class="stat-lbl">Total Calories</div></div>
+    <div class="stat-card c-gold"><div class="stat-icon">🏅</div><div class="stat-val" id="d-streak">—</div><div class="stat-lbl">Day Streak</div></div>
+  </div>
+  <div class="grid-4" style="margin-bottom:1.25rem">
+    <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-val" id="d-today-steps">—</div><div class="stat-lbl">Steps Today</div></div>
+    <div class="stat-card c-info"><div class="stat-icon">🍎</div><div class="stat-val" id="d-today-cal">—</div><div class="stat-lbl">Calories Today</div></div>
+    <div class="stat-card" style="grid-column:span 2">
+      <div class="stat-icon">⚖️</div>
+      <div class="stat-val" id="d-weight">—</div>
+      <div class="stat-lbl">Weight (kg) — <span style="color:var(--muted)">update for accurate calories</span></div>
+      <div class="weight-row">
+        <input type="number" id="d-weight-input" placeholder="kg" min="30" max="200"/>
+        <button class="btn btn-ghost btn-sm" onclick="updateWeight()">Update</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN NOTICES -->
+  <div id="notices-section" style="display:none;margin-bottom:1.25rem"></div>
+
+  <!-- LOG + MOTIVATION -->
+  <div class="grid-2" style="margin-bottom:1.25rem">
+    <div class="card log-card">
+      <div class="sec-title">⚡ Log Steps</div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:.4rem">
+          <span>Daily Goal Progress</span>
+          <strong id="d-goal-pct">0%</strong>
+        </div>
+        <div class="prog-track"><div class="prog-bar" id="d-prog-bar" style="width:0%"></div></div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem"><span id="d-today-steps2">0</span> of <span id="d-goal">10,000</span> steps</div>
+      </div>
+      <div class="step-row">
+        <input type="number" class="big-input" id="d-steps-input" placeholder="0" min="1" max="100000" oninput="updatePreview()"/>
+        <button class="btn btn-primary" style="width:auto;height:56px;padding:.5rem 1.1rem" onclick="logSteps()">Log 🚀</button>
+      </div>
+      <div class="date-note-row">
+        <div>
+          <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:.3rem">Date <span style="color:var(--accent3);font-size:.7rem">(can log past dates)</span></label>
+          <input type="date" id="d-step-date" max=""/>
+        </div>
+        <div>
+          <label style="font-size:.78rem;color:var(--muted);display:block;margin-bottom:.3rem">Note <span style="color:var(--muted);font-size:.7rem">(optional)</span></label>
+          <input type="text" id="d-step-note" placeholder="e.g. Morning walk"/>
+        </div>
+      </div>
+      <div class="preview" id="d-preview"></div>
+      <div class="quick-btns">
+        <div class="quick-btn" onclick="qs(2000)">+2K</div>
+        <div class="quick-btn" onclick="qs(5000)">+5K</div>
+        <div class="quick-btn" onclick="qs(8000)">+8K</div>
+        <div class="quick-btn" onclick="qs(10000)">+10K</div>
+        <div class="quick-btn" onclick="qs(15000)">+15K</div>
+      </div>
+      <button class="auto-btn" onclick="location.href='/stepcounter'">📱 Auto Count with Phone Sensor</button>
+      <button class="auto-btn fitbit-btn" id="fitbit-connect-btn" onclick="connectFitbit()" style="margin-top:.45rem;background:rgba(0,229,160,.07);border-color:rgba(0,229,160,.2);color:var(--accent)">⌚ Connect Fitbit &amp; Sync Steps</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:1rem">
+      <div class="motiv-card" id="d-motiv">
+        <span style="font-size:2rem" id="d-motiv-emoji">🌟</span>
+        <div style="font-size:.88rem;line-height:1.5" id="d-motiv-text">Loading...</div>
+      </div>
+      <div class="card" style="flex:1">
+        <div class="sec-title">🔥 Streak</div>
+        <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem;background:var(--surface);border-radius:10px;margin-bottom:.6rem">
+          <div style="font-family:'Syne',sans-serif;font-size:2.5rem;font-weight:800;color:var(--accent2)" id="d-streak2">0</div>
+          <div><div style="font-weight:600">consecutive days</div><div style="font-size:.78rem;color:var(--muted)" id="d-streak-msg">Start logging to build your streak!</div></div>
+        </div>
+        <div class="sec-title" style="font-size:.85rem;margin-bottom:.5rem">🏅 Badges</div>
+        <div id="d-badges" style="display:flex;flex-wrap:wrap;gap:.4rem"><span style="color:var(--muted);font-size:.82rem">No badges yet!</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHART -->
+  <div class="card" style="margin-bottom:1.25rem">
+    <div class="sec-title">📈 Steps Over Time (last 30 days)</div>
+    <div class="chart-wrap"><canvas id="d-chart"></canvas></div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="card">
+    <div class="sec-title" style="justify-content:space-between">
+      <span>📋 My Step History</span>
+      <span style="font-size:.78rem;color:var(--muted)">You can edit or delete your entries</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Steps</th><th>km</th><th>Calories</th><th>Note</th><th>Source</th><th>Actions</th></tr></thead>
+        <tbody id="d-history"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No entries yet — start walking! 🚶</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">✏️ Edit Entry <button class="modal-close" onclick="closeEditModal()">✕</button></div>
+    <input type="hidden" id="edit-id"/>
+    <div class="form-group"><label>Steps</label><input type="number" id="edit-steps" min="1" max="100000"/></div>
+    <div class="form-group"><label>Date</label><input type="date" id="edit-date" max=""/></div>
+    <div class="form-group"><label>Note</label><input type="text" id="edit-note" placeholder="Optional note"/></div>
+    <div style="display:flex;gap:.65rem;margin-top:.5rem">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let dashChart=null, userWeight=null;
+const TODAY=new Date().toISOString().slice(0,10);
+document.getElementById('d-step-date').max=TODAY;
+document.getElementById('d-step-date').value=TODAY;
+document.getElementById('edit-date').max=TODAY;
+
+function updatePreview(){
+  const v=parseInt(document.getElementById('d-steps-input').value)||0;
+  const km=(v/1300).toFixed(2);
+  let cal='';
+  if(userWeight){const r=userWeight<60?.04:userWeight<=85?.05:.06;cal=` • ~${Math.round(v*r)} kcal`;}
+  document.getElementById('d-preview').textContent=v>0?`≈ ${km} km${cal}`:'';
+}
+function qs(n){document.getElementById('d-steps-input').value=n;updatePreview();}
+
+async function logSteps(){
+  const steps=parseInt(document.getElementById('d-steps-input').value);
+  const dt=document.getElementById('d-step-date').value||TODAY;
+  const note=document.getElementById('d-step-note').value.trim();
+  if(!steps||steps<=0){showToast('Enter a valid step count','error');return;}
+  if(dt>TODAY){showToast('Cannot log steps for future dates','error');return;}
+  const btn=event.target;btn.disabled=true;btn.textContent='Logging...';
+  try{
+    const r=await fetch('/api/log-steps',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({steps,date:dt,note,source:'manual'})});
+    const d=await r.json();
+    if(d.success){
+      let msg=`✅ ${steps.toLocaleString()} steps logged!`;
+      if(d.calories_burned)msg+=` ~${d.calories_burned} kcal 🔥`;
+      showToast(msg,'success');
+      if(d.milestone)showMilestone(d.milestone);
+      document.getElementById('d-steps-input').value='';
+      document.getElementById('d-step-note').value='';
+      document.getElementById('d-step-date').value=TODAY;
+      document.getElementById('d-preview').textContent='';
+      loadDashboard();
+    }else showToast(d.message||'Failed','error');
+  }catch{showToast('Connection error','error');}
+  btn.disabled=false;btn.textContent='Log 🚀';
+}
+
+async function updateWeight(){
+  const w=parseFloat(document.getElementById('d-weight-input').value);
+  if(!w||w<30||w>200){showToast('Enter valid weight (30–200)','error');return;}
+  const r=await fetch('/api/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({weight_kg:w})});
+  const d=await r.json();
+  if(d.success){showToast('Weight updated ✅','success');userWeight=w;loadDashboard();}
+}
+
+async function deleteEntry(id){
+  if(!confirm('Delete this step entry?'))return;
+  const r=await fetch(`/api/steps/${id}`,{method:'DELETE'});
+  const d=await r.json();
+  if(d.success){showToast('Entry deleted','info');loadDashboard();}
+  else showToast(d.message||'Failed','error');
+}
+
+function openEditModal(id,steps,dt,note){
+  document.getElementById('edit-id').value=id;
+  document.getElementById('edit-steps').value=steps;
+  document.getElementById('edit-date').value=dt;
+  document.getElementById('edit-note').value=note||'';
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeEditModal(){document.getElementById('edit-modal').classList.remove('open');}
+
+async function saveEdit(){
+  const id=document.getElementById('edit-id').value;
+  const steps=parseInt(document.getElementById('edit-steps').value);
+  const dt=document.getElementById('edit-date').value;
+  const note=document.getElementById('edit-note').value;
+  if(!steps||steps<=0){showToast('Enter valid steps','error');return;}
+  if(dt>TODAY){showToast('Cannot set future date','error');return;}
+  const r=await fetch(`/api/steps/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({steps,date:dt,note})});
+  const d=await r.json();
+  if(d.success){showToast('Entry updated ✅','success');closeEditModal();loadDashboard();}
+  else showToast(d.message||'Failed','error');
+}
+
+let _chart=null;
+
+// ── COUNTRY FLAG RENDERER ──
+// Uses flagcdn.com flag images keyed on ISO 2-letter country code.
+// Falls back to emoji, then plain country name if image fails.
+function renderCountryFlag(el, countryCode, countryName, flagEmoji) {
+  if (!el) return;
+  el.innerHTML = '';
+
+  if (countryCode && countryCode.length === 2) {
+    const code = countryCode.toLowerCase();
+    const img = document.createElement('img');
+    img.className = 'country-flag-img';
+    img.src = `https://flagcdn.com/w40/${code}.png`;
+    img.alt = countryName || countryCode;
+    img.title = countryName || countryCode;
+    img.onerror = () => {
+      // Fallback: try emoji, else plain name
+      img.remove();
+      const span = document.createElement('span');
+      span.textContent = (flagEmoji || '🌍') + ' ' + (countryName || '');
+      el.appendChild(span);
+    };
+    el.appendChild(img);
+  } else if (flagEmoji) {
+    const span = document.createElement('span');
+    span.textContent = flagEmoji;
+    el.appendChild(span);
+  }
+
+  if (countryName) {
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = countryName;
+    el.appendChild(nameSpan);
+  }
+}
+
+async function loadDashboard(){
+  try{
+    const r=await fetch('/api/dashboard-data');
+    if(r.status===401){location.href='/login';return;}
+    if(!r.ok){throw new Error('Failed to load data');}
+    const d=await r.json();
+    userWeight=d.user.weight_kg;
+    document.getElementById('d-event').textContent='📅 '+d.event_name;
+
+    const countryFlagEl=document.getElementById('d-country-flag');
+    const flag    = d.user.country_flag  || '';
+    const country = d.user.country       || '';
+    const code    = d.user.country_code  || '';
+    const display = d.user.country_display || '';
+    if (country || code) {
+      countryFlagEl.style.display = 'inline-flex';
+      renderCountryFlag(countryFlagEl, code, country, flag);
+    } else {
+      countryFlagEl.style.display = 'none';
+    }
+
+    document.getElementById('d-total-steps').textContent=fnum(d.total_steps);
+    document.getElementById('d-total-km').textContent=d.total_km;
+    document.getElementById('d-total-cal').textContent=d.total_calories!=null?fnum(d.total_calories)+' kcal':'—';
+    document.getElementById('d-today-steps').textContent=fnum(d.today_steps);
+    document.getElementById('d-today-cal').textContent=d.today_calories!=null?fnum(d.today_calories)+' kcal':'—';
+    document.getElementById('d-streak').textContent=d.streak;
+    document.getElementById('d-streak2').textContent=d.streak;
+    document.getElementById('d-streak-msg').textContent=d.streak>0?`🔥 ${d.streak} day${d.streak>1?'s':''} strong!`:'Start logging to build your streak!';
+    document.getElementById('d-weight').textContent=userWeight?userWeight+' kg':'Not set';
+    document.getElementById('d-weight-input').value=userWeight||'';
+
+    const pct=Math.min(100,Math.round(d.today_steps/d.daily_goal*100));
+    document.getElementById('d-goal-pct').textContent=pct+'%';
+    const pb=document.getElementById('d-prog-bar');
+    pb.style.width=pct+'%';
+    pb.style.background=pct>=100?'#ffd700':pct>=75?'#00e5a0':pct>=50?'#ffb020':'#ff4757';
+    document.getElementById('d-today-steps2').textContent=fnum(d.today_steps);
+    document.getElementById('d-goal').textContent=fnum(d.daily_goal);
+
+    const mc=document.getElementById('d-motiv');
+    const lvl=d.motivation.level;
+    mc.className='motiv-card '+lvl;
+    document.getElementById('d-motiv-emoji').textContent={low:'😴',medium:'💪',high:'🔥',champion:'🏆'}[lvl]||'💪';
+    document.getElementById('d-motiv-text').textContent=d.motivation.msg;
+
+    const bw=document.getElementById('d-badges');
+    bw.innerHTML=d.badges.length?d.badges.map(b=>`<span class="badge-item" style="border-color:${b.color}40;color:${b.color}">${b.icon} ${b.name}</span>`).join(''):'<span style="color:var(--muted);font-size:.82rem">No badges yet — keep walking!</span>';
+
+    if(d.chart_labels.length){
+      if(_chart)_chart.destroy();
+      _chart=new Chart(document.getElementById('d-chart').getContext('2d'),{
+        type:'line',
+        data:{labels:d.chart_labels.map(l=>{const[,m,day]=l.split('-');return`${parseInt(m)}/${parseInt(day)}`;}),
+              datasets:[{label:'Steps',data:d.chart_values,borderColor:'#00e5a0',backgroundColor:'rgba(0,229,160,.08)',fill:true,tension:.4,pointBackgroundColor:'#00e5a0',pointRadius:3,pointHoverRadius:6}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#161a22',borderColor:'#1e2433',borderWidth:1,callbacks:{label:c=>`${fnum(c.raw)} steps`}}},
+          scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7280',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#6b7280',font:{size:10},callback:v=>v>=1000?(v/1000)+'K':v}}}}
+      });
+    }
+
+    const tb=document.getElementById('d-history');
+    if(d.history.length){
+      tb.innerHTML=d.history.map(h=>{
+        const sc=h.steps>=10000?'badge-green':h.steps>=5000?'badge-tag badge-gold':'badge-red';
+        const calStr=h.calories!=null?`<span class="badge-tag badge-orange">🔥 ${fnum(h.calories)}</span>`:'—';
+        const srcStr=h.source==='fitbit'?'<span class="badge-tag badge-purple">📱 Fitbit</span>':h.source==='auto'?'<span class="badge-tag badge-purple">📱 Auto</span>':'<span class="badge-tag badge-gray">Manual</span>';
+        return`<tr>
+          <td>${h.date}</td>
+          <td><span class="badge-tag ${sc}">${fnum(h.steps)}</span></td>
+          <td style="color:var(--accent3)">${h.km}</td>
+          <td>${calStr}</td>
+          <td style="color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis">${h.note||'—'}</td>
+          <td>${srcStr}</td>
+          <td>
+            <button class="hist-action-btn" title="Edit" onclick="openEditModal(${h.id},${h.steps},'${h.date}','${(h.note||'').replace(/'/g,"\'")}')">✏️</button>
+            <button class="hist-action-btn" title="Delete" onclick="deleteEntry(${h.id})" style="color:var(--danger)">🗑️</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }else{
+      tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No entries yet — start walking! 🚶</td></tr>';
+    }
+  }catch(e){console.error(e); showToast('Failed to load dashboard data. Please refresh the page.','error');}
+}
+
+async function loadNotices(){
+  try{
+    const r=await fetch('/api/notices');
+    const notices=await r.json();
+    const sec=document.getElementById('notices-section');
+    if(!notices||notices.length===0){sec.style.display='none';return;}
+    sec.style.display='block';
+    sec.innerHTML=notices.map(n=>`
+      <div style="background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.2);border-radius:12px;padding:.85rem 1rem;margin-bottom:.6rem;display:flex;gap:.75rem;align-items:flex-start">
+        <span style="font-size:1.3rem;flex-shrink:0">📢</span>
+        <div style="flex:1">
+          <div style="font-size:.9rem;color:var(--text);line-height:1.5">${escHtmlD(n.message)}</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem">From Admin • ${n.created_at.slice(0,16)}</div>
+        </div>
+      </div>`).join('');
+  }catch{}
+}
+function escHtmlD(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+document.addEventListener('DOMContentLoaded',()=>{loadDashboard();loadNotices();checkFitbitStatus();});
+document.getElementById('d-steps-input').addEventListener('keydown',e=>{if(e.key==='Enter')logSteps();});
+
+// Fitbit connect/sync from dashboard
+async function connectFitbit(){
+  const btn=document.getElementById('fitbit-connect-btn');
+  try{
+    const r=await fetch('/api/fitbit/status');
+    const d=await r.json();
+    if(d.connected){
+      btn.disabled=true;
+      btn.textContent='⌚ Syncing Fitbit…';
+      const sr=await fetch('/api/fitbit/sync',{method:'POST'});
+      const sd=await sr.json();
+      if(sd.success){
+        showToast(`✅ Synced ${sd.synced||0} days from Fitbit`,'success');
+        loadDashboard();
+      } else {
+        showToast(sd.message||'Sync failed','error');
+      }
+      btn.disabled=false;
+      btn.innerHTML='⌚ Sync Fitbit Steps';
+    } else {
+      location.href='/fitbit/connect';
+    }
+  }catch{
+    location.href='/fitbit';
+  }
+}
+
+async function checkFitbitStatus(){
+  try{
+    const r=await fetch('/api/fitbit/status');
+    const d=await r.json();
+    const btn=document.getElementById('fitbit-connect-btn');
+    if(d.connected){
+      btn.innerHTML='⌚ Sync Fitbit Steps';
+      btn.title='Fitbit connected — click to sync latest steps';
+    }
+  }catch{}
+}
+</script>
+{% endblock %}

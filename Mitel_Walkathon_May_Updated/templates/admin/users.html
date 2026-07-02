@@ -1,0 +1,83 @@
+{% extends "admin/base.html" %}
+{% block title %}All Users — Admin{% endblock %}
+{% block page_title %}All Users{% endblock %}
+
+{% block admin_content %}
+<div class="anim">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800">All Registered Users</div>
+      <div style="color:var(--muted);font-size:.85rem">{{ users|length }} user{{ 's' if users|length != 1 else '' }} total</div>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <a href="/api/admin/export?type=individual" class="btn btn-ghost btn-sm">⬇ Export CSV</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="margin-bottom:.85rem">
+      <input type="text" id="search" placeholder="Search by name, email or team..." oninput="filterTable()" style="max-width:320px"/>
+    </div>
+    <div class="table-wrap">
+      <table id="users-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Team</th>
+            <th>Weight</th>
+            <th>Total Steps</th>
+            <th>Role</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          {% if u.role != 'admin' %}
+          <tr data-search="{{ u.name|lower }} {{ u.email|lower }} {{ (u.team_name or '')|lower }}">
+            <td style="color:var(--muted)">{{ loop.index }}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:.6rem">
+                <div style="width:30px;height:30px;border-radius:50%;background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.2);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;color:var(--accent)">{{ u.name[0].upper() }}</div>
+                <strong>{{ u.name }}</strong>
+              </div>
+            </td>
+            <td style="color:var(--muted)">{{ u.email }}</td>
+            <td>{% if u.team_name %}<span class="badge-tag badge-purple">{{ u.team_name }}</span>{% else %}<span style="color:var(--muted)">—</span>{% endif %}</td>
+            <td style="color:var(--muted)">{{ u.weight_kg if u.weight_kg else '—' }}</td>
+            <td><span class="badge-tag badge-green">{{ "{:,}".format(u.total_steps) }}</span></td>
+            <td><span class="badge-tag badge-gray">{{ u.role }}</span></td>
+            <td style="color:var(--muted)">{{ u.created_at[:10] if u.created_at else '—' }}</td>
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="deleteUser({{ u.id }},'{{ u.name }}')">Delete</button>
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterTable(){
+  const q=document.getElementById('search').value.toLowerCase();
+  document.querySelectorAll('#users-table tbody tr').forEach(r=>{
+    r.style.display=r.dataset.search.includes(q)?'':'none';
+  });
+}
+
+async function deleteUser(id,name){
+  if(!confirm(`Delete user "${name}" and all their step data? This cannot be undone.`))return;
+  const r=await fetch(`/api/admin/users/${id}`,{method:'DELETE'});
+  const d=await r.json();
+  if(d.success){showToast('User deleted','info');setTimeout(()=>location.reload(),600);}
+  else showToast(d.message||'Failed','error');
+}
+</script>
+{% endblock %}

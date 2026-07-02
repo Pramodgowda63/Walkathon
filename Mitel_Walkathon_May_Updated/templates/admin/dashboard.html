@@ -1,0 +1,432 @@
+{% extends "admin/base.html" %}
+{% block title %}Admin Dashboard — StepUp{% endblock %}
+{% block page_title %}Admin Overview{% endblock %}
+
+{% block admin_content %}
+<div class="anim">
+  <div style="margin-bottom:1.25rem">
+    <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800">Welcome back, <span style="color:var(--accent)">{{ user_name }}</span> 👋</div>
+    <div style="color:var(--muted);font-size:.88rem;margin-top:.2rem">Admin Dashboard — Full access to all data</div>
+  </div>
+
+  <div class="grid-4" style="margin-bottom:1.25rem" id="admin-stats">
+    <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val" id="s-users">—</div><div class="stat-lbl">Total Users</div></div>
+    <div class="stat-card c-purple"><div class="stat-icon">🏟️</div><div class="stat-val" id="s-teams">—</div><div class="stat-lbl">Total Teams</div></div>
+    <div class="stat-card c-orange"><div class="stat-icon">👟</div><div class="stat-val" id="s-steps">—</div><div class="stat-lbl">Total Steps</div></div>
+    <div class="stat-card c-info"><div class="stat-icon">📅</div><div class="stat-val" id="s-active">—</div><div class="stat-lbl">Active Today</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div style="display:flex;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap">
+    <button class="tab-btn active" onclick="switchTab('settings',this)">⚙️ Settings</button>
+    <button class="tab-btn" onclick="switchTab('fitbit',this)">⌚ Fitbit Config</button>
+    <button class="tab-btn" onclick="switchTab('notices',this)">📢 Notice Board</button>
+    <button class="tab-btn" onclick="switchTab('backup',this)">💾 Backup &amp; Restore</button>
+  </div>
+
+  <!-- TAB: SETTINGS -->
+  <div id="tab-settings" class="tab-panel">
+    <div class="card">
+      <div class="sec-title">⚙️ Event Settings</div>
+      <div class="grid-2">
+        <div>
+          <div class="form-group">
+            <label class="form-label">Event Name</label>
+            <input type="text" id="cfg-name" value="{{ config.event_name if config else 'Walk-a-Thon' }}"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Daily Step Goal</label>
+            <input type="number" id="cfg-goal" value="{{ config.daily_goal if config else 10000 }}" min="1000" max="100000"/>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Start Date</label>
+              <input type="date" id="cfg-start" value="{{ config.start_date if config else '' }}"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">End Date</label>
+              <input type="date" id="cfg-end" value="{{ config.end_date if config else '' }}"/>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="saveConfig()">Save Settings</button>
+        </div>
+        <div>
+          <div style="background:rgba(0,229,160,.06);border:1px solid rgba(0,229,160,.15);border-radius:12px;padding:1.1rem;margin-bottom:.85rem">
+            <div style="font-size:.85rem;font-weight:700;color:var(--accent);margin-bottom:.5rem">💡 Quick Tips</div>
+            <div style="font-size:.78rem;color:var(--muted);line-height:1.8">• Set your event dates to track the challenge period<br>• Daily goal is shown on every user's dashboard<br>• Export Excel anytime to analyse progress<br>• Add Fitbit credentials in the Fitbit tab</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: FITBIT CONFIG -->
+  <div id="tab-fitbit" class="tab-panel" style="display:none">
+    <div class="card">
+      <div class="sec-title">⌚ Fitbit API Configuration</div>
+      <div style="background:rgba(108,99,255,.07);border:1px solid rgba(108,99,255,.18);border-radius:10px;padding:.85rem;margin-bottom:1.25rem;font-size:.83rem;color:var(--muted);line-height:1.7">
+        ℹ️ Enter your Fitbit developer credentials here so users can connect their Fitbit devices. Get these from <a href="https://dev.fitbit.com" target="_blank" style="color:var(--accent3)">dev.fitbit.com</a>.
+      </div>
+      <div class="grid-2">
+        <div>
+          <div class="form-group">
+            <label class="form-label">Fitbit Client ID</label>
+            <input type="text" id="cfg-fitbit-id" value="{{ config.fitbit_client_id if config else '' }}" placeholder="From dev.fitbit.com"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fitbit Client Secret</label>
+            <div class="input-wrap">
+              <input type="password" id="cfg-fitbit-secret" value="{{ config.fitbit_client_secret if config else '' }}" placeholder="Client secret"/>
+              <button type="button" class="eye-btn" onclick="toggleEye('cfg-fitbit-secret',this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="saveFitbitConfig()">Save Fitbit Config</button>
+        </div>
+        <div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem">
+            <div style="font-size:.85rem;font-weight:700;margin-bottom:.75rem">📋 Setup Steps</div>
+            <div style="font-size:.78rem;color:var(--muted);line-height:1.9">
+              <div style="display:flex;gap:.6rem;margin-bottom:.5rem"><span style="background:rgba(108,99,255,.2);color:var(--accent3);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;font-size:.7rem">1</span><span>Go to <strong>dev.fitbit.com</strong> → Register an App</span></div>
+              <div style="display:flex;gap:.6rem;margin-bottom:.5rem"><span style="background:rgba(108,99,255,.2);color:var(--accent3);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;font-size:.7rem">2</span><span>Set Application Type to <strong>Personal</strong></span></div>
+              <div style="display:flex;gap:.6rem;margin-bottom:.5rem"><span style="background:rgba(108,99,255,.2);color:var(--accent3);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;font-size:.7rem">3</span><span>Set Callback URL to your server's <code style="background:var(--card);padding:.1rem .35rem;border-radius:4px">/fitbit/callback</code></span></div>
+              <div style="display:flex;gap:.6rem"><span style="background:rgba(108,99,255,.2);color:var(--accent3);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;font-size:.7rem">4</span><span>Paste Client ID &amp; Secret here, then users can connect their Fitbit</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: NOTICE BOARD -->
+  <div id="tab-notices" class="tab-panel" style="display:none">
+    <div class="card" style="margin-bottom:1.25rem">
+      <div class="sec-title">📢 Post a Notice</div>
+      <div style="color:var(--muted);font-size:.83rem;margin-bottom:1rem">Type a message and all users will see it on their dashboard instantly.</div>
+      <div class="form-group">
+        <label class="form-label">Notice Message</label>
+        <textarea id="notice-msg" rows="3" placeholder="e.g. Great work everyone! Week 2 starts Monday — keep those steps up 🏃‍♂️" style="resize:vertical;min-height:80px"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="postNotice()">📢 Post Notice</button>
+    </div>
+    <div class="card">
+      <div class="sec-title" style="display:flex;align-items:center;justify-content:space-between">
+        📋 Active Notices
+        <button class="btn btn-ghost btn-sm" onclick="loadNotices()" style="font-size:.78rem">Refresh</button>
+      </div>
+      <div id="notices-list"><div style="color:var(--muted);text-align:center;padding:1.5rem;font-size:.88rem">Loading notices...</div></div>
+    </div>
+  </div>
+
+  <!-- TAB: BACKUP & RESTORE -->
+  <div id="tab-backup" class="tab-panel" style="display:none">
+
+    <!-- Network Share + OneDrive Status -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <div class="sec-title">🌐 Backup Destinations</div>
+      <div style="display:grid;gap:.75rem;margin-bottom:1rem">
+
+        <!-- Network Share -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.9rem">
+          <div style="font-size:.78rem;font-weight:700;color:var(--accent3);margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em">① Network Share</div>
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:.35rem .75rem;font-size:.82rem;align-items:center">
+            <span style="color:var(--muted)">Host</span>
+            <code style="background:var(--card);padding:.1rem .4rem;border-radius:5px;font-size:.8rem">\\10.211.243.115\walkdata</code>
+            <span style="color:var(--muted)">User</span>
+            <code style="background:var(--card);padding:.1rem .4rem;border-radius:5px;font-size:.8rem">mitel / Mitel@123</code>
+            <span style="color:var(--muted)">Excel</span>
+            <code style="background:var(--card);padding:.1rem .4rem;border-radius:5px;font-size:.8rem">…\excel\</code>
+            <span style="color:var(--muted)">Photos</span>
+            <code style="background:var(--card);padding:.1rem .4rem;border-radius:5px;font-size:.8rem">…\photos\</code>
+            <span style="color:var(--muted)">Status</span>
+            <span style="display:inline-flex;align-items:center;gap:.4rem;font-weight:700;font-size:.82rem">
+              <span id="net-dot" style="width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block"></span>
+              <span id="net-status-text">Checking…</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- OneDrive Desktop -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.9rem">
+          <div style="font-size:.78rem;font-weight:700;color:#0078D4;margin-bottom:.6rem;text-transform:uppercase;letter-spacing:.05em">② OneDrive Desktop (auto-syncs to cloud)</div>
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:.35rem .75rem;font-size:.82rem;align-items:center">
+            <span style="color:var(--muted)">Path</span>
+            <code style="background:var(--card);padding:.1rem .4rem;border-radius:5px;font-size:.78rem;word-break:break-all">C:\Users\gowdp\OneDrive - Mitel Networks Corporation\Desktop\backup wakathon</code>
+            <span style="color:var(--muted)">Excel</span>
+            <code style="background:var(--card);padding:.1rem .4rem;border-radius:5px;font-size:.8rem">…\excel\</code>
+            <span style="color:var(--muted)">Photos</span>
+            <code style="background:var(--card);padding:.1rem .4rem;border-radius:5px;font-size:.8rem">…\photos\</code>
+            <span style="color:var(--muted)">Status</span>
+            <span style="display:inline-flex;align-items:center;gap:.4rem;font-weight:700;font-size:.82rem">
+              <span id="od-dot" style="width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block"></span>
+              <span id="od-status-text">Checking…</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:.65rem;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="testNetworkShare()" id="btn-test-net" style="font-size:.82rem">🔌 Test Both Connections</button>
+      </div>
+      <div id="net-test-result" style="margin-top:.65rem;font-size:.82rem"></div>
+    </div>
+
+    <!-- Export Excel -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <div class="sec-title">📊 Export Excel Backup</div>
+      <div style="color:var(--muted);font-size:.83rem;margin-bottom:1rem;line-height:1.6">
+        Download a full Excel backup of all users, teams, and step data. Optional fields that have no value will show <strong>-</strong> instead of blank. The file also saves to <code style="background:var(--card);padding:.1rem .3rem;border-radius:4px">\\10.211.243.115\walkdata\excel\</code> every hour automatically.
+      </div>
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+        <a href="/api/admin/export-excel" class="btn btn-primary">⬇ Download Excel Backup (.xlsx)</a>
+        <button class="btn btn-ghost" onclick="triggerNetworkBackup()" id="btn-net-backup">☁ Save to Network Share Now</button>
+      </div>
+      <div id="backup-status" style="margin-top:.75rem;font-size:.83rem;color:var(--muted)"></div>
+      <div style="margin-top:.85rem;background:rgba(0,229,160,.05);border:1px solid rgba(0,229,160,.12);border-radius:10px;padding:.85rem;font-size:.78rem;color:var(--muted);line-height:1.7">
+        ℹ️ Auto-backup fires every hour and saves to both <strong>local backups\</strong> folder and <strong>\\10.211.243.115\walkdata\excel\</strong>. The last 48 backups are kept. User photos are also automatically copied to <strong>\\10.211.243.115\walkdata\photos\</strong> when uploaded.
+      </div>
+    </div>
+
+    <!-- Upload & Restore -->
+    <div class="card">
+      <div class="sec-title">📤 Upload Excel Backup to Restore Database</div>
+      <div style="color:var(--muted);font-size:.83rem;margin-bottom:1rem;line-height:1.6">
+        If the database was lost, deleted, or corrupted — upload the latest <code>.xlsx</code> backup here. The system will read it and restore all users, teams, and step records automatically. Existing records are never overwritten; only missing ones are added.
+      </div>
+
+      <div id="drop-zone" style="border:2px dashed var(--border);border-radius:14px;padding:2rem;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:1rem"
+           onclick="document.getElementById('backup-file-input').click()"
+           ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='rgba(0,229,160,.05)'"
+           ondragleave="this.style.borderColor='var(--border)';this.style.background=''"
+           ondrop="handleDrop(event)">
+        <div style="font-size:2.5rem;margin-bottom:.5rem">📁</div>
+        <div style="font-weight:700;margin-bottom:.25rem">Drop your .xlsx backup here</div>
+        <div style="font-size:.8rem;color:var(--muted)">or click to browse</div>
+        <input type="file" id="backup-file-input" accept=".xlsx" style="display:none" onchange="handleFileSelect(this.files[0])"/>
+      </div>
+
+      <div id="file-preview" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.85rem;margin-bottom:1rem;display:flex;align-items:center;gap:.75rem">
+        <span style="font-size:1.6rem">📄</span>
+        <div style="flex:1">
+          <div id="file-name" style="font-weight:700;font-size:.9rem"></div>
+          <div id="file-size" style="font-size:.75rem;color:var(--muted)"></div>
+        </div>
+        <button onclick="clearFile()" style="background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.2);color:var(--danger);border-radius:8px;padding:.3rem .65rem;cursor:pointer;font-size:.78rem;font-weight:700">✕ Clear</button>
+      </div>
+      <div id="file-preview-hidden" style="display:none"></div>
+
+      <button class="btn btn-primary" id="btn-restore" onclick="uploadBackup()" disabled>🔄 Restore Database from File</button>
+      <div id="restore-status" style="margin-top:.85rem;font-size:.85rem"></div>
+
+      <div style="margin-top:1rem;background:rgba(255,167,38,.06);border:1px solid rgba(255,167,38,.18);border-radius:10px;padding:.85rem;font-size:.78rem;color:var(--muted);line-height:1.7">
+        ⚠️ <strong>Safe to use any time.</strong> Records that already exist in the database are skipped — nothing is deleted or overwritten. Only records missing from the database are inserted back.
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK LINKS -->
+  <div class="grid-auto" style="margin-top:1.25rem">
+    <a href="/admin/users" class="card" style="text-decoration:none;cursor:pointer;transition:transform .2s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
+      <div style="font-size:2rem;margin-bottom:.5rem">👥</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700">All Users</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:.25rem">View and manage all registered users</div>
+    </a>
+    <a href="/admin/leaderboard" class="card" style="text-decoration:none;cursor:pointer;transition:transform .2s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
+      <div style="font-size:2rem;margin-bottom:.5rem">🏆</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700">Full Leaderboard</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:.25rem">Complete rankings for individuals and teams</div>
+    </a>
+    <a href="/admin/steps" class="card" style="text-decoration:none;cursor:pointer;transition:transform .2s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
+      <div style="font-size:2rem;margin-bottom:.5rem">👟</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700">Step Entries</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:.25rem">Browse, filter and manage all step logs</div>
+    </a>
+    <a href="/admin/photos" class="card" style="text-decoration:none;cursor:pointer;transition:transform .2s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
+      <div style="font-size:2rem;margin-bottom:.5rem">📸</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700">Photo Moderation</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-top:.25rem">Review, edit or delete gallery photos</div>
+    </a>
+  </div>
+</div>
+
+<style>
+.tab-btn{background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:600;font-size:.85rem;padding:.5rem 1.1rem;cursor:pointer;transition:all .2s;}
+.tab-btn:hover{color:var(--text);border-color:rgba(0,229,160,.3);}
+.tab-btn.active{background:rgba(0,229,160,.1);border-color:rgba(0,229,160,.35);color:var(--accent);}
+.input-wrap{position:relative;}
+.eye-btn{position:absolute;right:.7rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);display:flex;align-items:center;}
+.notice-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:.65rem;display:flex;gap:.85rem;align-items:flex-start;}
+.notice-body{flex:1;}
+.notice-msg{font-size:.9rem;color:var(--text);line-height:1.5;margin-bottom:.35rem;}
+.notice-meta{font-size:.75rem;color:var(--muted);}
+#drop-zone:hover{border-color:var(--accent);background:rgba(0,229,160,.03);}
+@media(max-width:768px){.tab-btn{font-size:.78rem;padding:.45rem .85rem;}}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Stats ──────────────────────────────────────────────────────────────────
+async function loadStats(){
+  const r=await fetch('/api/admin/stats'); const d=await r.json();
+  document.getElementById('s-users').textContent=d.total_users.toLocaleString();
+  document.getElementById('s-teams').textContent=d.total_teams.toLocaleString();
+  document.getElementById('s-steps').textContent=d.total_steps.toLocaleString();
+  document.getElementById('s-active').textContent=d.today_active;
+  // update network dot from stats
+  const dot=document.getElementById('net-dot'); const txt=document.getElementById('net-status-text');
+  if(dot && txt){
+    if(d.network_share_ok){dot.style.background='#00E5A0';txt.textContent='Connected ✅';}
+    else{dot.style.background='#FF4757';txt.textContent='Unreachable ❌';}
+  // OneDrive dot - check if path exists (always reachable on local machine)
+  const odDot=document.getElementById('od-dot'); const odTxt=document.getElementById('od-status-text');
+  if(odDot&&odTxt){odDot.style.background='#0078D4';odTxt.textContent='OneDrive path configured ✅';}
+  }
+}
+
+// ── Network share test ─────────────────────────────────────────────────────
+async function testNetworkShare(){
+  const btn=document.getElementById('btn-test-net'); const res=document.getElementById('net-test-result');
+  const dot=document.getElementById('net-dot'); const txt=document.getElementById('net-status-text');
+  btn.disabled=true; btn.textContent='Testing…'; res.textContent='';
+  try{
+    const r=await fetch('/api/admin/test-network'); const d=await r.json();
+    if(d.connected){
+      dot.style.background='#00E5A0'; txt.textContent='Connected ✅';
+      res.innerHTML=`<span style="color:var(--accent)">✅ Share connected. Excel dir ready: <strong>${d.excel_dir_ok?'Yes':'No'}</strong> · Photos dir ready: <strong>${d.photos_dir_ok?'Yes':'No'}</strong></span>`;
+    }else{
+      dot.style.background='#FF4757'; txt.textContent='Unreachable ❌';
+      res.innerHTML=`<span style="color:var(--danger)">❌ Could not connect to <strong>\\\\10.211.243.115\\walkdata</strong>. Check that the server is online and credentials are correct.</span>`;
+    }
+  }catch(e){
+    res.innerHTML=`<span style="color:var(--danger)">❌ Request failed: ${e.message}</span>`;
+  }finally{btn.disabled=false; btn.textContent='🔌 Test Connection';}
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.style.display='none');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).style.display='';
+  btn.classList.add('active');
+  if(name==='notices') loadNotices();
+}
+
+// ── Settings ───────────────────────────────────────────────────────────────
+async function saveConfig(){
+  const body={event_name:document.getElementById('cfg-name').value,daily_goal:parseInt(document.getElementById('cfg-goal').value),
+    fitbit_client_id:document.getElementById('cfg-fitbit-id')?document.getElementById('cfg-fitbit-id').value.trim():'',
+    fitbit_client_secret:document.getElementById('cfg-fitbit-secret')?document.getElementById('cfg-fitbit-secret').value.trim():'',
+    start_date:document.getElementById('cfg-start').value,end_date:document.getElementById('cfg-end').value};
+  const r=await fetch('/api/admin/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(d.success)showToast('Settings saved ✅','success'); else showToast(d.message||'Failed','error');
+}
+async function saveFitbitConfig(){
+  const body={event_name:document.getElementById('cfg-name').value,daily_goal:parseInt(document.getElementById('cfg-goal').value)||10000,
+    fitbit_client_id:document.getElementById('cfg-fitbit-id').value.trim(),fitbit_client_secret:document.getElementById('cfg-fitbit-secret').value.trim(),
+    start_date:document.getElementById('cfg-start').value,end_date:document.getElementById('cfg-end').value};
+  const r=await fetch('/api/admin/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(d.success)showToast('Fitbit config saved ✅','success'); else showToast(d.message||'Failed','error');
+}
+function toggleEye(id,btn){
+  const inp=document.getElementById(id); const show=inp.type==='password'; inp.type=show?'text':'password';
+  btn.innerHTML=show?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><line x1="1" y1="1" x2="23" y2="23"/><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/></svg>`:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+}
+
+// ── Notices ────────────────────────────────────────────────────────────────
+async function postNotice(){
+  const msg=document.getElementById('notice-msg').value.trim();
+  if(!msg){showToast('Please enter a message','error');return;}
+  const r=await fetch('/api/admin/notices',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+  const d=await r.json();
+  if(d.success){document.getElementById('notice-msg').value='';showToast('Notice posted! ✅','success');loadNotices();}
+  else showToast(d.message||'Failed','error');
+}
+async function deleteNotice(id){
+  if(!confirm('Delete this notice?'))return;
+  const r=await fetch(`/api/admin/notices/${id}`,{method:'DELETE'}); const d=await r.json();
+  if(d.success){showToast('Notice deleted','info');loadNotices();}
+}
+async function loadNotices(){
+  const el=document.getElementById('notices-list');
+  try{
+    const r=await fetch('/api/admin/notices'); const notices=await r.json();
+    if(notices.length===0){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:1.5rem;font-size:.88rem">No notices posted yet.</div>';return;}
+    el.innerHTML=notices.map(n=>`<div class="notice-item"><div style="font-size:1.4rem;flex-shrink:0">📢</div><div class="notice-body"><div class="notice-msg">${escHtml(n.message)}</div><div class="notice-meta">Posted by ${escHtml(n.created_by)} • ${n.created_at.slice(0,16)}</div></div><button onclick="deleteNotice(${n.id})" style="background:rgba(255,71,87,.1);border:1px solid rgba(255,71,87,.2);color:var(--danger);border-radius:8px;padding:.35rem .65rem;cursor:pointer;font-size:.78rem;font-weight:700;flex-shrink:0;font-family:'DM Sans',sans-serif">Delete</button></div>`).join('');
+  }catch{el.innerHTML='<div style="color:var(--danger);text-align:center;padding:1rem">Error loading notices</div>';}
+}
+
+// ── Network backup ─────────────────────────────────────────────────────────
+async function triggerNetworkBackup(){
+  const btn=document.getElementById('btn-net-backup'); const status=document.getElementById('backup-status');
+  btn.disabled=true; btn.textContent='⏳ Saving...'; status.textContent='';
+  try{
+    const r=await fetch('/api/admin/trigger-backup',{method:'POST'}); const d=await r.json();
+    if(d.success){
+      status.innerHTML=`<span style="color:var(--accent)">✅ Saved to: <code>${escHtml(d.path)}</code></span>`;
+      showToast('Network backup saved ✅','success');
+    }else{
+      status.innerHTML=`<span style="color:var(--danger)">❌ ${escHtml(d.message||'Backup failed')}</span>`;
+      showToast(d.message||'Backup failed','error');
+    }
+  }catch(e){
+    status.innerHTML=`<span style="color:var(--danger)">❌ Request failed: ${e.message}</span>`;
+  }finally{btn.disabled=false; btn.textContent='☁ Save to Network Path Now';}
+}
+
+// ── File restore ───────────────────────────────────────────────────────────
+let selectedFile=null;
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('drop-zone').style.borderColor='var(--border)';
+  document.getElementById('drop-zone').style.background='';
+  const f=e.dataTransfer.files[0];
+  if(f) handleFileSelect(f);
+}
+function handleFileSelect(f){
+  if(!f) return;
+  if(!f.name.toLowerCase().endsWith('.xlsx')){showToast('Only .xlsx files accepted','error');return;}
+  selectedFile=f;
+  document.getElementById('file-preview').style.display='flex';
+  document.getElementById('file-preview-hidden').style.display='none';
+  document.getElementById('file-name').textContent=f.name;
+  document.getElementById('file-size').textContent=`${(f.size/1024).toFixed(1)} KB`;
+  document.getElementById('btn-restore').disabled=false;
+  document.getElementById('restore-status').textContent='';
+}
+function clearFile(){
+  selectedFile=null;
+  document.getElementById('backup-file-input').value='';
+  document.getElementById('file-preview').style.display='none';
+  document.getElementById('btn-restore').disabled=true;
+  document.getElementById('restore-status').textContent='';
+}
+async function uploadBackup(){
+  if(!selectedFile){showToast('Please select a file first','error');return;}
+  const btn=document.getElementById('btn-restore'); const status=document.getElementById('restore-status');
+  btn.disabled=true; btn.textContent='⏳ Restoring...'; status.textContent='';
+  const fd=new FormData(); fd.append('file',selectedFile);
+  try{
+    const r=await fetch('/api/admin/upload-backup',{method:'POST',body:fd}); const d=await r.json();
+    if(d.success){
+      status.innerHTML=`<span style="color:var(--accent);font-weight:700">✅ ${escHtml(d.message)}</span>`;
+      showToast('Database restored successfully ✅','success');
+      clearFile();
+      setTimeout(()=>loadStats(),800);
+    }else{
+      status.innerHTML=`<span style="color:var(--danger)">❌ ${escHtml(d.message||'Restore failed')}</span>`;
+      showToast(d.message||'Restore failed','error');
+    }
+  }catch(e){
+    status.innerHTML=`<span style="color:var(--danger)">❌ Request failed: ${e.message}</span>`;
+  }finally{btn.disabled=false; btn.textContent='🔄 Restore Database from File';}
+}
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+document.addEventListener('DOMContentLoaded',()=>{loadStats();});
+</script>
+{% endblock %}
